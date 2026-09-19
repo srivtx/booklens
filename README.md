@@ -133,6 +133,32 @@ always returns the best archive it could produce.
 # exits 1 on any error-severity issue
 ```
 
+## SARIF and code scanning
+
+Emit a [SARIF 2.1.0](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html)
+log and let GitHub code scanning annotate the pull request:
+
+```bash
+booklens audit book.epub --sarif booklens.sarif
+```
+
+```yaml
+- run: bunx booklens audit public/book.epub --sarif booklens.sarif
+- uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: booklens.sarif
+```
+
+`--fail-on` controls when the command exits non-zero and defaults to `error`.
+Pass `warning`, `info`, or `none` to loosen it:
+
+```bash
+booklens audit book.epub --fail-on warning
+```
+
+`fix` accepts the same `--sarif` and `--fail-on` flags; its SARIF report
+describes the issues remaining after the fix.
+
 ## Testing
 
 | Gate | Result |

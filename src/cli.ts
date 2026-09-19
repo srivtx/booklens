@@ -1,14 +1,25 @@
 import { audit } from "./audit";
 import { fixEpub } from "./fix";
+import { writeSarif } from "./sarif";
+import type { Issue, Severity } from "./types";
+import pkg from "../package.json" with { type: "json" };
+
+const VERSION = pkg.version;
 
 const USAGE = `Usage:
-  audit <file> [--json]
-  fix <file> -o <out> [--language <lang>] [--title <title>] [--only CODES] [--dry-run]`;
+  audit <file> [--json] [--sarif <path>] [--fail-on <error|warning|info|none>]
+  fix <file> -o <out> [--language <lang>] [--title <title>] [--only CODES] [--dry-run] [--sarif <path>] [--fail-on <error|warning|info|none>]
+
+Global:
+  --version            Print the version and exit
+  --help, -h           Print this usage and exit`;
 
 interface ParsedArgs {
   positional: string[];
   flags: Map<string, string | boolean>;
 }
+
+type FailOn = "error" | "warning" | "info" | "none";
 
 function parseArgs(args: string[]): ParsedArgs {
   const positional: string[] = [];
@@ -71,8 +82,72 @@ function parseOnly(value: string | boolean | undefined): string[] | undefined {
   return codes.length > 0 ? codes : undefined;
 }
 
+function countsOf(issues: Issue[]): Record<Severity, number> {
+  const counts = { error: 0, warning: 0, info: 0 };
+  for (const issue of issues) {
+    if (issue.severity === "error") counts.error += 1;
+    else if (issue.severity === "warning") counts.warning += 1;
+    else counts.info += 1;
+  }
+  return counts;
+}
+
+function resolveFailOn(value: string | boolean | undefined): FailOn | undefined {
+  if (value === undefined || value === true) return "error";
+  if (
+    value === "error" ||
+    value === "warning" ||
+    value === "info" ||
+    value === "none"
+  ) {
+    return value;
+  }
+  return undefined;
+}
+
+function shouldFail(counts: Record<Severity, number>, failOn: FailOn): boolean {
+  if (failOn === "none") return false;
+  if (failOn === "info") {
+    return counts.error + counts.warning + counts.info > 0;
+  }
+  if (failOn === "warning") return counts.error + counts.warning > 0;
+  return counts.error > 0;
+}
+
+async function sarifPath(
+  flags: Map<string, string | boolean>,
+): Promise<string | undefined> {
+  const value = flags.get("sarif");
+  if (typeof value !== "string" || value.length === 0) return undefined;
+  return value;
+}
+
+function wantsVersion(flags: Map<string, string | boolean>): boolean {
+  return flags.get("version") === true;
+}
+
+function wantsHelp(flags: Map<string, string | boolean>): boolean {
+  return flags.get("help") === true || flags.get("h") === true;
+}
+
 async function runAudit(args: string[]): Promise<number> {
   const { positional, flags } = parseArgs(args);
+
+  if (wantsVersion(flags)) {
+    console.log(VERSION);
+    return 0;
+  }
+  if (wantsHelp(flags)) {
+    console.log(USAGE);
+    return 0;
+  }
+
+  const failOn = resolveFailOn(flags.get("fail-on"));
+  if (failOn === undefined) {
+    console.error("Invalid --fail-on value (expected error, warning, info, or none).");
+    return 1;
+  }
+
   const file = positional[0];
   if (!file) {
     console.error(USAGE);
@@ -92,11 +167,32 @@ async function runAudit(args: string[]): Promise<number> {
     }
   }
 
-  return result.counts.error > 0 ? 1 : 0;
+  const out = await sarifPath(flags);
+  if (out !== undefined) {
+    await writeSarif(out, result, pkg.name, VERSION);
+  }
+
+  return shouldFail(result.counts, failOn) ? 1 : 0;
 }
 
 async function runFix(args: string[]): Promise<number> {
   const { positional, flags } = parseArgs(args);
+
+  if (wantsVersion(flags)) {
+    console.log(VERSION);
+    return 0;
+  }
+  if (wantsHelp(flags)) {
+    console.log(USAGE);
+    return 0;
+  }
+
+  const failOn = resolveFailOn(flags.get("fail-on"));
+  if (failOn === undefined) {
+    console.error("Invalid --fail-on value (expected error, warning, info, or none).");
+    return 1;
+  }
+
   const file = positional[0];
   if (!file) {
     console.error(USAGE);
@@ -126,12 +222,32 @@ async function runFix(args: string[]): Promise<number> {
     await Bun.write(out, result.data);
   }
 
-  return 0;
+  const remaining = {
+    file,
+    issues: result.remaining,
+    counts: countsOf(result.remaining),
+  };
+
+  const out = await sarifPath(flags);
+  if (out !== undefined) {
+    await writeSarif(out, remaining, pkg.name, VERSION);
+  }
+
+  return shouldFail(remaining.counts, failOn) ? 1 : 0;
 }
 
 export async function main(argv: string[] = process.argv.slice(2)): Promise<number> {
   const command = argv[0];
   const rest = argv.slice(1);
+
+  if (command === "--version" || command === "-v") {
+    console.log(VERSION);
+    return 0;
+  }
+  if (command === "--help" || command === "-h") {
+    console.log(USAGE);
+    return 0;
+  }
 
   if (command === "audit") return runAudit(rest);
   if (command === "fix") return runFix(rest);

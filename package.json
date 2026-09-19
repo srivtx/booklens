@@ -4,6 +4,10 @@
   "description": "Offline EPUB accessibility auditor and auto-fixer. Audit EPUB Accessibility 1.1 / WCAG and write a corrected EPUB in one command.",
   "type": "module",
   "module": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "sideEffects": false,
   "bin": {
     "booklens": "src/cli.ts"
   },
@@ -13,6 +17,20 @@
     "LICENSE",
     "CHANGELOG.md"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/srivtx/booklens.git"
+  },
+  "homepage": "https://github.com/srivtx/booklens",
+  "bugs": {
+    "url": "https://github.com/srivtx/booklens/issues"
+  },
+  "engines": {
+    "bun": ">=1.1.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "typecheck": "bunx tsc --noEmit",
     "test": "bun test",
@@ -27,7 +45,9 @@
     "wcag",
     "epubcheck",
     "daisy",
-    "ace"
+    "ace",
+    "sarif",
+    "code-scanning"
   ],
   "license": "MIT",
   "devDependencies": {
