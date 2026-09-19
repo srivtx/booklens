@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 import { audit } from "./audit";
 import { fixEpub } from "./fix";
 import { writeSarif } from "./sarif";
