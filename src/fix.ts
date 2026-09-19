@@ -7,7 +7,7 @@ import type {
   Issue,
   Opf,
 } from "./types";
-import { readEpub, writeEpub } from "./zip";
+import { readEpub, writeEpub, normalizeMemberPath } from "./zip";
 import { parseOpf, resolveHref } from "./opf";
 import { findNavDoc } from "./nav";
 import { audit } from "./audit";
@@ -528,11 +528,12 @@ function collectPagebreaks(
 
 export function fixEpub(data: Uint8Array, options: FixOptions = {}): FixResult {
   const applied: string[] = [];
-  const store = readEpub(data);
+  const skipped: string[] = [];
+  const store = readEpub(data, options.limits);
   const files = new Map<string, Uint8Array>();
   for (const file of store.files) files.set(file.path, file.data);
 
-  const initial = audit(data);
+  const initial = audit(data, "document.epub", options.limits);
   const present = new Set(initial.issues.map((issue) => issue.code));
   const only = options.only;
   const allowed = (code: string): boolean =>
@@ -621,12 +622,12 @@ export function fixEpub(data: Uint8Array, options: FixOptions = {}): FixResult {
 
     if (nav && nav.path.length > 0 && !nav.isXhtml) {
       if (should("W010")) {
-        applied.push(
+        skipped.push(
           `W010: skipped (navigation document ${nav.path} is NCX, not XHTML)`,
         );
       }
       if (should("W011")) {
-        applied.push(
+        skipped.push(
           `W011: skipped (navigation document ${nav.path} is NCX, not XHTML)`,
         );
       }
@@ -676,7 +677,9 @@ export function fixEpub(data: Uint8Array, options: FixOptions = {}): FixResult {
     }
 
     if (should("E015") && !nav) {
-      const navPath = opf.dir.length > 0 ? `${opf.dir}/nav.xhtml` : "nav.xhtml";
+      const navPath = normalizeMemberPath(
+        opf.dir.length > 0 ? `${opf.dir}/nav.xhtml` : "nav.xhtml",
+      );
       const navDir = opf.dir;
       const navDoc = buildNavDocument(navDir, docPaths, files, language);
       files.set(navPath, toBytes(navDoc));
@@ -724,5 +727,5 @@ export function fixEpub(data: Uint8Array, options: FixOptions = {}): FixResult {
 
   const outData = writeEpub(outStore);
   const remaining = audit(outData).issues;
-  return { data: outData, applied, remaining };
+  return { data: outData, applied, skipped, remaining };
 }

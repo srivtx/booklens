@@ -104,13 +104,53 @@ describe("fixEpub", () => {
     expect(ncx).not.toContain("page-list");
 
     expect(
-      result.applied.some(
+      result.skipped.some(
         (entry) => entry.startsWith("W010:") && entry.includes("skipped"),
       ) ||
-        result.applied.some(
+        result.skipped.some(
           (entry) => entry.startsWith("W011:") && entry.includes("skipped"),
         ),
     ).toBe(true);
+  });
+
+  it("reports W010/W011 skips separately and stays idempotent on NCX books", () => {
+    const first = fixEpub(makeNcxEpub(), { language: "en", title: "NCX Book" });
+
+    expect(
+      first.applied.some((entry) => entry.includes("skipped")),
+    ).toBe(false);
+    expect(first.skipped.length).toBeGreaterThan(0);
+
+    const second = fixEpub(first.data, {
+      language: "en",
+      title: "NCX Book",
+    });
+
+    expect(
+      second.applied.some(
+        (entry) => entry.startsWith("W010:") || entry.startsWith("W011:"),
+      ),
+    ).toBe(false);
+    expect(
+      second.skipped.some((entry) => entry.startsWith("W010:")),
+    ).toBe(true);
+    expect(
+      second.skipped.some((entry) => entry.startsWith("W011:")),
+    ).toBe(true);
+  });
+
+  it("is byte-reproducible across independent fixes", () => {
+    const first = fixEpub(makeInaccessibleEpub());
+    const second = fixEpub(makeInaccessibleEpub());
+
+    expect(Array.from(first.data)).toEqual(Array.from(second.data));
+  });
+
+  it("threads unzip limits through fixEpub", () => {
+    const limits = { maxMembers: 1, maxEntryBytes: 100, maxTotalBytes: 100 };
+    expect(() => fixEpub(makeInaccessibleEpub(), { limits })).toThrow(
+      EpubReadError,
+    );
   });
 
   it("keeps a rewritten EPUB2/NCX spine document well-formed XML", () => {

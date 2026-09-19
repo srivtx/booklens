@@ -1,11 +1,15 @@
 import type { AuditResult, EpubStore, NavDoc, Opf } from "./types";
 import { parseOpf } from "./opf";
 import { findNavDoc } from "./nav";
-import { readEpub } from "./zip";
+import { readEpub, type UnzipLimits } from "./zip";
 import { runRules } from "./rules";
 
-export function audit(data: Uint8Array, file = "document.epub"): AuditResult {
-  const store: EpubStore = readEpub(data);
+export function audit(
+  data: Uint8Array,
+  file = "document.epub",
+  limits?: UnzipLimits,
+): AuditResult {
+  const store: EpubStore = readEpub(data, limits);
 
   let opf: Opf | undefined;
   try {

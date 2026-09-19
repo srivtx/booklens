@@ -1,4 +1,6 @@
 #!/usr/bin/env bun
+import { readdirSync } from "node:fs";
+import { basename, join } from "node:path";
 import { audit } from "./audit";
 import { fixEpub } from "./fix";
 import { writeSarif } from "./sarif";
@@ -10,20 +12,26 @@ import type { AuditResult, FixResult, Issue, Severity } from "./types";
 import pkg from "../package.json" with { type: "json" };
 
 const VERSION = pkg.version;
+const PROG = "booklens";
 
-const USAGE = `booklens ${VERSION}
+const USAGE = `${PROG} ${VERSION}
 
 Usage:
-  booklens audit <file> [options]
-  booklens fix <file> [options]
+  ${PROG} audit <file> [options]
+  ${PROG} audit --dir <path> [options]
+  ${PROG} fix <file> [options]
+  ${PROG} fix --dir <path> [options]
 
 Commands:
-  audit <file>        Report accessibility issues in an EPUB.
-  fix <file>          Write a repaired EPUB (default: <input>.fixed.epub).
+  audit               Report accessibility issues in an EPUB.
+  fix                 Write a repaired EPUB (default: <input>.fixed.epub).
 
 Options:
-  -o <path>           fix: output path (default: <input>.fixed.epub)
-  --json              audit: print the full result as JSON
+  -o <path>           fix: output path (single input only)
+  --dir <path>        Read every .epub in <path> (non-recursive, sorted)
+  --json              Print machine-readable JSON; one object for a single
+                      input, an array when reading more than one
+  --quiet, -q         Print a single summary line per file
   --sarif <path>      Write a SARIF 2.1.0 report to <path>
   --fail-on <level>   Exit 1 at or above this severity: error (default),
                       warning, info, or none
@@ -35,61 +43,131 @@ Options:
   -v, --version       Print the version and exit
   -h, --help          Print this help and exit
 
+Every value flag also accepts --flag=value. A lone -- ends option parsing.
+Unknown options are rejected.
+
 Exit codes:
   0  success; no findings at or above --fail-on
-  1  findings at or above --fail-on, or invalid arguments
-  2  the input could not be read or is not a valid EPUB
+  1  findings at or above --fail-on
+  2  invalid usage, or a file that cannot be parsed as an EPUB
+  3  an input file/directory or output report could not be read/written
 
 Examples:
-  booklens audit book.epub
-  booklens audit book.epub --json --sarif booklens.sarif
-  booklens fix book.epub -o book.fixed.epub --language en --title "My Book"
-  booklens fix book.epub --only E001,E002 --dry-run`;
+  ${PROG} audit book.epub
+  ${PROG} audit book.epub --json --sarif ${PROG}.sarif
+  ${PROG} audit --dir public --quiet --fail-on warning
+  ${PROG} fix book.epub -o book.fixed.epub --language en --title "My Book"
+  ${PROG} fix book.epub --only E001,E002 --dry-run`;
 
 const KNOWN_CODES = new Set<string>(RULE_CODES as readonly string[]);
+
+const VALUE_FLAGS = new Set([
+  "--sarif",
+  "--fail-on",
+  "--language",
+  "--title",
+  "--only",
+  "--dir",
+]);
+
+const BOOLEAN_FLAGS = new Set([
+  "--json",
+  "--dry-run",
+  "--quiet",
+  "--help",
+  "--version",
+]);
+
+type FailOn = "error" | "warning" | "info" | "none";
+
+class UsageError extends Error {}
+class IoError extends Error {}
 
 interface ParsedArgs {
   positional: string[];
   flags: Map<string, string | boolean>;
 }
 
-type FailOn = "error" | "warning" | "info" | "none";
+function takeValue(args: string[], index: number, flag: string): string {
+  const next = args[index + 1];
+  if (next === undefined || next.length === 0 || next.startsWith("-")) {
+    throw new UsageError(`option ${flag} requires a value`);
+  }
+  return next;
+}
 
 function parseArgs(args: string[]): ParsedArgs {
   const positional: string[] = [];
   const flags = new Map<string, string | boolean>();
+  let endOfOptions = false;
 
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
     if (arg === undefined) continue;
 
-    if (arg === "-o") {
-      const value = args[i + 1];
-      flags.set("o", value ?? "");
-      if (value !== undefined) i += 1;
+    if (endOfOptions) {
+      positional.push(arg);
+      continue;
+    }
+    if (arg === "--") {
+      endOfOptions = true;
+      continue;
+    }
+
+    if (arg === "-o" || arg.startsWith("-o=")) {
+      let value = arg.startsWith("-o=") ? arg.slice(3) : undefined;
+      if (value === undefined) {
+        value = takeValue(args, i, "-o");
+        i += 1;
+      }
+      if (value.length === 0) throw new UsageError("option -o requires a value");
+      flags.set("o", value);
       continue;
     }
 
     if (arg.startsWith("--")) {
       const eq = arg.indexOf("=");
-      if (eq !== -1) {
-        flags.set(arg.slice(2, eq), arg.slice(eq + 1));
+      const key = eq === -1 ? arg : arg.slice(0, eq);
+      const inline = eq === -1 ? undefined : arg.slice(eq + 1);
+
+      if (BOOLEAN_FLAGS.has(key)) {
+        if (inline !== undefined) {
+          throw new UsageError(`option ${key} does not take a value`);
+        }
+        flags.set(key.slice(2), true);
         continue;
       }
-      const key = arg.slice(2);
-      const next = args[i + 1];
-      if (next !== undefined && !next.startsWith("-")) {
-        flags.set(key, next);
-        i += 1;
-      } else {
-        flags.set(key, true);
+
+      if (VALUE_FLAGS.has(key)) {
+        let value = inline;
+        if (value === undefined) {
+          value = takeValue(args, i, key);
+          i += 1;
+        }
+        if (value.length === 0) {
+          throw new UsageError(`option ${key} requires a value`);
+        }
+        flags.set(key.slice(2), value);
+        continue;
       }
-      continue;
+
+      throw new UsageError(`unknown option ${key}`);
     }
 
     if (arg.startsWith("-") && arg.length > 1) {
-      flags.set(arg.slice(1), true);
-      continue;
+      if (arg === "-q") {
+        flags.set("quiet", true);
+        continue;
+      }
+      if (arg === "-v") {
+        flags.set("version", true);
+        continue;
+      }
+      if (arg === "-h") {
+        flags.set("help", true);
+        continue;
+      }
+      throw new UsageError(`unknown option ${arg}`);
     }
 
     positional.push(arg);
@@ -115,45 +193,59 @@ interface ParsedOnly {
 function parseOnly(value: string | boolean | undefined): ParsedOnly {
   if (value === undefined) return {};
   if (typeof value !== "string" || value.trim() === "") {
-    return { error: "--only requires at least one rule code (e.g. --only E001,E002)." };
+    return { error: "--only requires at least one rule code (e.g. --only E001,E002)" };
   }
   const codes = value
     .split(/[,\s]+/)
     .map((code: string) => code.trim().toUpperCase())
     .filter((code: string) => code.length > 0);
   if (codes.length === 0) {
-    return { error: "--only requires at least one rule code (e.g. --only E001,E002)." };
+    return { error: "--only requires at least one rule code (e.g. --only E001,E002)" };
   }
   const unknown = codes.filter((code) => !KNOWN_CODES.has(code));
   if (unknown.length > 0) {
     return {
-      error: `Unknown rule code(s): ${unknown.join(", ")}. Known codes: ${[...KNOWN_CODES].join(", ")}.`,
+      error: `unknown rule code(s): ${unknown.join(", ")}. Known codes: ${[...KNOWN_CODES].join(", ")}`,
     };
   }
   return { codes };
 }
 
-function validateSingleInput(positional: string[]): string | undefined {
-  if (positional.length === 0) {
-    console.error(USAGE);
-    return undefined;
+function resolveInputs(
+  positional: string[],
+  flags: Map<string, string | boolean>,
+): string[] {
+  const dirFlag = flags.get("dir");
+  if (dirFlag === undefined) {
+    if (positional.length === 0) return [];
+    if (positional.length > 1) {
+      throw new UsageError(
+        `unexpected extra argument(s): ${positional.slice(1).join(", ")} (expected exactly one input)`,
+      );
+    }
+    return [positional[0] as string];
   }
-  if (positional.length > 1) {
-    console.error(
-      `Unexpected extra argument(s): ${positional.slice(1).join(", ")}. Provide exactly one input file.`,
-    );
-    return undefined;
+
+  const dir = dirFlag as string;
+  let entries: string[];
+  try {
+    entries = readdirSync(dir);
+  } catch (error) {
+    throw new IoError(`cannot read directory ${dir}: ${errorMessage(error)}`);
   }
-  return positional[0];
+
+  const inputs = [...positional];
+  for (const name of entries
+    .filter((entry) => entry.toLowerCase().endsWith(".epub"))
+    .sort()) {
+    inputs.push(join(dir, name));
+  }
+  return inputs;
 }
 
-function sarifError(flags: Map<string, string | boolean>): string | undefined {
-  if (!flags.has("sarif")) return undefined;
+function sarifPath(flags: Map<string, string | boolean>): string | undefined {
   const value = flags.get("sarif");
-  if (typeof value !== "string" || value.trim() === "") {
-    return "--sarif requires a non-empty output path.";
-  }
-  return undefined;
+  return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
 function countsOf(issues: Issue[]): Record<Severity, number> {
@@ -166,8 +258,28 @@ function countsOf(issues: Issue[]): Record<Severity, number> {
   return counts;
 }
 
-function resolveFailOn(value: string | boolean | undefined): FailOn | undefined {
-  if (value === undefined || value === true) return "error";
+function sumCounts(results: AuditResult[]): Record<Severity, number> {
+  const counts = { error: 0, warning: 0, info: 0 };
+  for (const result of results) {
+    counts.error += result.counts.error;
+    counts.warning += result.counts.warning;
+    counts.info += result.counts.info;
+  }
+  return counts;
+}
+
+function summaryLine(file: string, counts: Record<Severity, number>): string {
+  return `${basename(file)}: ${counts.error} error(s), ${counts.warning} warning(s), ${counts.info} info`;
+}
+
+function issueLine(issue: Issue): string {
+  return `${issue.severity} ${issue.code} ${issue.location} ${issue.message}`;
+}
+
+function resolveFailOn(
+  value: string | boolean | undefined,
+): FailOn | undefined {
+  if (value === undefined) return "error";
   if (
     value === "error" ||
     value === "warning" ||
@@ -188,40 +300,23 @@ function shouldFail(counts: Record<Severity, number>, failOn: FailOn): boolean {
   return counts.error > 0;
 }
 
-async function sarifPath(
-  flags: Map<string, string | boolean>,
-): Promise<string | undefined> {
-  const value = flags.get("sarif");
-  if (typeof value !== "string" || value.length === 0) return undefined;
-  return value;
-}
-
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-// A readable ZIP may still not be an EPUB. Treat a missing/unreadable
-// container or package document as an I/O/parse failure (exit 2) rather than
-// as an accessibility finding (exit 1).
-function validateEpub(data: Uint8Array, file: string): number | undefined {
-  try {
-    assertReadableEpub(readEpub(data));
-    return undefined;
-  } catch (error) {
-    if (error instanceof EpubReadError) {
-      console.error(`Cannot parse ${file}: ${error.message}`);
-      return 2;
-    }
-    throw error;
-  }
-}
-
 function wantsVersion(flags: Map<string, string | boolean>): boolean {
-  return flags.get("version") === true || flags.get("v") === true;
+  return flags.get("version") === true;
 }
 
 function wantsHelp(flags: Map<string, string | boolean>): boolean {
-  return flags.get("help") === true || flags.get("h") === true;
+  return flags.get("help") === true;
+}
+
+// A readable ZIP may still not be an EPUB. Treat a missing/unreadable
+// container or package document as a parse failure (exit 2) rather than as an
+// accessibility finding (exit 1).
+function assertEpub(data: Uint8Array): void {
+  assertReadableEpub(readEpub(data));
 }
 
 async function runAudit(args: string[]): Promise<number> {
@@ -238,57 +333,91 @@ async function runAudit(args: string[]): Promise<number> {
 
   const failOn = resolveFailOn(flags.get("fail-on"));
   if (failOn === undefined) {
-    console.error("Invalid --fail-on value (expected error, warning, info, or none).");
-    return 1;
+    throw new UsageError(
+      "invalid --fail-on value (expected error, warning, info, or none)",
+    );
   }
 
-  const sarifIssue = sarifError(flags);
-  if (sarifIssue !== undefined) {
-    console.error(sarifIssue);
-    return 1;
-  }
+  const only = parseOnly(flags.get("only"));
+  if (only.error !== undefined) throw new UsageError(only.error);
 
-  const file = validateSingleInput(positional);
-  if (file === undefined) return 1;
+  const inputs = resolveInputs(positional, flags);
+  if (inputs.length === 0) throw new UsageError("no input file");
 
-  let data: Uint8Array;
-  try {
-    data = await readBytes(file);
-  } catch (error) {
-    console.error(`Cannot read ${file}: ${errorMessage(error)}`);
-    return 2;
-  }
+  const json = flags.get("json") === true;
+  const quiet = flags.get("quiet") === true;
+  const outPath = sarifPath(flags);
 
-  const invalidAudit = validateEpub(data, file);
-  if (invalidAudit !== undefined) return invalidAudit;
+  const results: AuditResult[] = [];
+  let hadIo = false;
+  let hadParse = false;
 
-  let result: AuditResult;
-  try {
-    result = audit(data, file);
-  } catch (error) {
-    if (error instanceof EpubReadError) {
-      console.error(`Cannot parse ${file}: ${error.message}`);
-      return 2;
+  for (const file of inputs) {
+    let data: Uint8Array;
+    try {
+      data = await readBytes(file);
+    } catch (error) {
+      console.error(`${PROG}: cannot read ${file}: ${errorMessage(error)}`);
+      hadIo = true;
+      continue;
     }
-    throw error;
+
+    let result: AuditResult;
+    try {
+      assertEpub(data);
+      result = audit(data, file);
+    } catch (error) {
+      if (error instanceof EpubReadError) {
+        console.error(`${PROG}: cannot parse ${file}: ${error.message}`);
+        hadParse = true;
+        continue;
+      }
+      throw error;
+    }
+
+    results.push(result);
+    if (!json) {
+      if (quiet) {
+        console.log(summaryLine(file, result.counts));
+      } else {
+        for (const issue of result.issues) console.log(issueLine(issue));
+      }
+    }
   }
 
-  if (flags.get("json") === true) {
-    console.log(JSON.stringify(result, null, 2));
-  } else {
-    for (const issue of result.issues) {
-      console.log(
-        `${issue.severity} ${issue.code} ${issue.location} ${issue.message}`,
+  if (json) {
+    console.log(
+      JSON.stringify(results.length === 1 ? results[0] : results, null, 2),
+    );
+  }
+
+  if (outPath !== undefined) {
+    try {
+      await writeSarif(
+        outPath,
+        results.length === 1 ? (results[0] as AuditResult) : results,
+        pkg.name,
+        VERSION,
       );
+    } catch (error) {
+      console.error(`${PROG}: cannot write ${outPath}: ${errorMessage(error)}`);
+      hadIo = true;
     }
   }
 
-  const out = await sarifPath(flags);
-  if (out !== undefined) {
-    await writeSarif(out, result, pkg.name, VERSION);
-  }
+  if (hadIo) return 3;
+  if (hadParse) return 2;
+  return shouldFail(sumCounts(results), failOn) ? 1 : 0;
+}
 
-  return shouldFail(result.counts, failOn) ? 1 : 0;
+interface FixJson {
+  file: string;
+  applied: string[];
+  skipped: string[];
+  remaining: Issue[];
+  counts: Record<Severity, number>;
+  output?: string;
+  dryRun: boolean;
 }
 
 async function runFix(args: string[]): Promise<number> {
@@ -305,81 +434,124 @@ async function runFix(args: string[]): Promise<number> {
 
   const failOn = resolveFailOn(flags.get("fail-on"));
   if (failOn === undefined) {
-    console.error("Invalid --fail-on value (expected error, warning, info, or none).");
-    return 1;
-  }
-
-  const sarifIssue = sarifError(flags);
-  if (sarifIssue !== undefined) {
-    console.error(sarifIssue);
-    return 1;
+    throw new UsageError(
+      "invalid --fail-on value (expected error, warning, info, or none)",
+    );
   }
 
   const only = parseOnly(flags.get("only"));
-  if (only.error !== undefined) {
-    console.error(only.error);
-    return 1;
+  if (only.error !== undefined) throw new UsageError(only.error);
+
+  const inputs = resolveInputs(positional, flags);
+  if (inputs.length === 0) throw new UsageError("no input file");
+
+  const outFlag = flags.get("o");
+  if (inputs.length > 1 && typeof outFlag === "string") {
+    throw new UsageError("option -o can only be used with a single input");
   }
 
-  const file = validateSingleInput(positional);
-  if (file === undefined) return 1;
-
-  let data: Uint8Array;
-  try {
-    data = await readBytes(file);
-  } catch (error) {
-    console.error(`Cannot read ${file}: ${errorMessage(error)}`);
-    return 2;
-  }
-
-  const invalidFix = validateEpub(data, file);
-  if (invalidFix !== undefined) return invalidFix;
-
+  const json = flags.get("json") === true;
+  const quiet = flags.get("quiet") === true;
+  const dryRun = flags.get("dry-run") === true;
+  const outPath = sarifPath(flags);
   const language = flags.get("language");
   const title = flags.get("title");
 
-  let result: FixResult;
-  try {
-    result = fixEpub(data, {
-      ...(typeof language === "string" ? { language } : {}),
-      ...(typeof title === "string" ? { title } : {}),
-      ...(only.codes ? { only: only.codes } : {}),
-    });
-  } catch (error) {
-    if (error instanceof EpubReadError) {
-      console.error(`Cannot parse ${file}: ${error.message}`);
-      return 2;
+  const results: FixJson[] = [];
+  const remainingResults: AuditResult[] = [];
+  let hadIo = false;
+  let hadParse = false;
+
+  for (const file of inputs) {
+    let data: Uint8Array;
+    try {
+      data = await readBytes(file);
+    } catch (error) {
+      console.error(`${PROG}: cannot read ${file}: ${errorMessage(error)}`);
+      hadIo = true;
+      continue;
     }
-    throw error;
+
+    let result: FixResult;
+    try {
+      assertEpub(data);
+      result = fixEpub(data, {
+        ...(typeof language === "string" ? { language } : {}),
+        ...(typeof title === "string" ? { title } : {}),
+        ...(only.codes ? { only: only.codes } : {}),
+      });
+    } catch (error) {
+      if (error instanceof EpubReadError) {
+        console.error(`${PROG}: cannot parse ${file}: ${error.message}`);
+        hadParse = true;
+        continue;
+      }
+      throw error;
+    }
+
+    let output: string | undefined;
+    if (!dryRun) {
+      output =
+        typeof outFlag === "string" && outFlag.length > 0
+          ? outFlag
+          : defaultOutputPath(file);
+      try {
+        await Bun.write(output, result.data);
+      } catch (error) {
+        console.error(
+          `${PROG}: cannot write ${output}: ${errorMessage(error)}`,
+        );
+        hadIo = true;
+        continue;
+      }
+    }
+
+    const counts = countsOf(result.remaining);
+    results.push({
+      file,
+      applied: result.applied,
+      skipped: result.skipped,
+      remaining: result.remaining,
+      counts,
+      ...(output !== undefined ? { output } : {}),
+      dryRun,
+    });
+    remainingResults.push({ file, issues: result.remaining, counts });
+
+    if (!json) {
+      if (quiet) {
+        console.log(
+          `${basename(file)}: ${result.applied.length} applied, ${result.skipped.length} skipped, ${counts.error} error(s), ${counts.warning} warning(s), ${counts.info} info`,
+        );
+      } else {
+        for (const entry of result.applied) console.log(entry);
+        for (const entry of result.skipped) console.log(`skipped: ${entry}`);
+        console.log(`remaining: ${result.remaining.length}`);
+      }
+    }
   }
 
-  for (const entry of result.applied) console.log(entry);
-  console.log(`remaining: ${result.remaining.length}`);
-
-  if (flags.get("dry-run") !== true) {
-    const outFlag = flags.get("o");
-    const out =
-      typeof outFlag === "string" && outFlag.length > 0
-        ? outFlag
-        : defaultOutputPath(file);
-    await Bun.write(out, result.data);
+  if (json) {
+    console.log(
+      JSON.stringify(results.length === 1 ? results[0] : results, null, 2),
+    );
   }
 
-  const remaining = {
-    file,
-    issues: result.remaining,
-    counts: countsOf(result.remaining),
-  };
-
-  const out = await sarifPath(flags);
-  if (out !== undefined) {
-    await writeSarif(out, remaining, pkg.name, VERSION);
+  if (outPath !== undefined) {
+    try {
+      await writeSarif(outPath, remainingResults, pkg.name, VERSION);
+    } catch (error) {
+      console.error(`${PROG}: cannot write ${outPath}: ${errorMessage(error)}`);
+      hadIo = true;
+    }
   }
 
-  return shouldFail(remaining.counts, failOn) ? 1 : 0;
+  if (hadIo) return 3;
+  if (hadParse) return 2;
+  return shouldFail(sumCounts(remainingResults), failOn) ? 1 : 0;
 }
 
-export async function main(argv: string[] = process.argv.slice(2)): Promise<number> {
+async function run(argv: string[]): Promise<number> {
   const command = argv[0];
   const rest = argv.slice(1);
 
@@ -395,8 +567,27 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
   if (command === "audit") return runAudit(rest);
   if (command === "fix") return runFix(rest);
 
-  console.error(USAGE);
-  return 1;
+  if (command === undefined) throw new UsageError("missing command");
+  if (command.startsWith("-")) throw new UsageError(`unknown option ${command}`);
+  throw new UsageError(`unknown command ${command}`);
+}
+
+export async function main(argv: string[] = process.argv.slice(2)): Promise<number> {
+  try {
+    return await run(argv);
+  } catch (error) {
+    if (error instanceof UsageError) {
+      console.error(`${PROG}: ${error.message}`);
+      console.error(USAGE);
+      return 2;
+    }
+    if (error instanceof IoError) {
+      console.error(`${PROG}: ${error.message}`);
+      return 3;
+    }
+    console.error(`${PROG}: ${errorMessage(error)}`);
+    return 1;
+  }
 }
 
 if (import.meta.main) {

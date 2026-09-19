@@ -1,3 +1,5 @@
+import type { UnzipLimits } from "./zip";
+
 export type Severity = "error" | "warning" | "info";
 
 export interface Issue {
@@ -66,6 +68,7 @@ export interface AuditResult {
 export interface FixResult {
   data: Uint8Array;
   applied: string[];
+  skipped: string[];
   remaining: Issue[];
 }
 
@@ -73,4 +76,5 @@ export interface FixOptions {
   language?: string;
   title?: string;
   only?: string[];
+  limits?: UnzipLimits;
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 ## [0.2.0] - 2026-09-20
 
 Production-hardening pass. No rule semantics changed; the fixes close gaps
@@ -27,9 +32,7 @@ between the audit report and what the tool actually writes and ships.
 - **CI bundle-drift gate** that rebuilds the site bundle and fails if the
   committed `site/assets/demo.js` is out of date.
 
-[0.2.0]: https://github.com/srivtx/booklens/compare/v0.1.0...v0.2.0
-
-## [0.1.0] — 2026-09-19
+## [0.1.0] - 2026-09-19
 
 First release.
 
@@ -48,4 +51,5 @@ First release.
 - **Library API**: `audit`, `fixEpub`, and the parsers, for use in a pipeline.
 - Zero network code and a dependency set of three pure-JS packages.
 
+[0.2.0]: https://github.com/srivtx/booklens/releases/tag/v0.2.0
 [0.1.0]: https://github.com/srivtx/booklens/releases/tag/v0.1.0

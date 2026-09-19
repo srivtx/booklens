@@ -63,9 +63,10 @@ representative at an online or offline event.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at
-maintainers@example.com. All complaints will be reviewed and investigated
-promptly and fairly.
+reported to the community leaders responsible for enforcement through the
+project repository at https://github.com/srivtx/booklens, or privately via
+GitHub Security Advisories at https://github.com/srivtx/booklens/security/advisories/new.
+All complaints will be reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the
 reporter of any incident.

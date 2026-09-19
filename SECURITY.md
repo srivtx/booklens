@@ -26,8 +26,16 @@ backports.
 - **Documents never leave the machine.** Parsing, auditing, and fixing all run
   in-process and locally.
 - **Untrusted input.** An EPUB is treated as hostile: ZIP members and XML are
-  parsed defensively, and a malformed, deeply nested, or oversized archive must
-  fail safely rather than escape the output path or exhaust the process.
+  parsed defensively. Member names are canonicalized and any absolute or `..`
+  path is rejected on read, and no member name that escapes the archive root is
+  ever written. A malformed, deeply nested, or oversized archive fails safely
+  rather than escape the output path or exhaust the process.
+- **Bounded decompression.** `readEpub` checks the sizes declared in the ZIP
+  central directory before allocating any member and refuses an archive with
+  more than 65,535 members, a member that expands beyond 512 MiB, or more than
+  1 GiB uncompressed in total (`DEFAULT_UNZIP_LIMITS` in `src/zip.ts`). A small
+  archive that declares a huge member is rejected with `EpubReadError`, not
+  expanded.
 - **No code execution from input.** Embedded scripts, macros, and remote
   content in a book are never evaluated or resolved.
 - **Fixers are conservative.** A repair rewrites only the accessibility

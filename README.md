@@ -11,7 +11,7 @@
 [![license](https://img.shields.io/badge/license-MIT-0f766e)](LICENSE)
 [![runtime](https://img.shields.io/badge/runtime-Bun-14151A?logo=bun&logoColor=white)](https://bun.sh)
 [![types](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
-[![tests](https://img.shields.io/badge/tests-36-0f766e)](#testing)
+[![tests](https://img.shields.io/badge/tests-63-0f766e)](#testing)
 [![network](https://img.shields.io/badge/network-none-0f766e)](#privacy)
 
 </div>
@@ -91,6 +91,9 @@ booklens audit book.epub
 # Audit: machine-readable for CI
 booklens audit book.epub --json
 
+# Audit every book in a directory: one summary line per file
+booklens audit --dir public --quiet --fail-on warning
+
 # Fix: write a corrected EPUB
 booklens fix book.epub -o book.fixed.epub --language en --title "My Book"
 
@@ -101,6 +104,22 @@ booklens fix book.epub --dry-run
 booklens fix book.epub --only E001,E002,W010
 ```
 
+Every value flag also accepts `--flag=value`, a lone `--` ends option
+parsing, and unknown options are rejected with `booklens: unknown option ...`
+and exit `2`. Errors are a single line prefixed with `booklens: `.
+
+### Exit codes
+
+| Code | Meaning |
+|---|---|
+| `0` | No findings at or above `--fail-on`. |
+| `1` | Findings at or above `--fail-on`. |
+| `2` | Invalid usage, or a file that cannot be parsed as an EPUB. |
+| `3` | An input file or directory, or an output report, could not be read or written. |
+
+`--json` prints one object for a single input and a JSON array when more than
+one input is read (e.g. with `--dir`); it is valid JSON either way.
+
 ### Library
 
 ```ts
@@ -109,11 +128,14 @@ import { audit, fixEpub } from "booklens";
 const report = audit(bytes, "book.epub");
 
 if (report.counts.error > 0) {
-  const { data, applied, remaining } = fixEpub(bytes, {
+  const { data, applied, skipped, remaining } = fixEpub(bytes, {
     language: "en",
     title: "My Book",
   });
-  // data: corrected EPUB bytes, applied: changelog, remaining: re-audit issues
+  // data: corrected EPUB bytes
+  // applied: changes actually written
+  // skipped: fixes that were intentionally not applied (e.g. NCX navigation)
+  // remaining: re-audit issues
 }
 ```
 
@@ -145,8 +167,8 @@ W011 is conditional. When the book contains pagebreaks it is a fixable
 `warning` and `fix` builds the page-list. When it does not, it is an `info`
 note, `fixable` is `false`, and `fix` does not pretend to resolve it. W010 and
 W011 can only be written into an XHTML navigation document; for an EPUB 2 /
-NCX-only book `fix` skips them with a clear changelog line instead of corrupting
-the NCX.
+NCX-only book `fix` skips them and reports each one on a separate `skipped:`
+line instead of corrupting the NCX or claiming a change it did not make.
 
 ## What `fix` actually does
 
@@ -159,6 +181,14 @@ the NCX.
   generates a whole navigation document when the book has none.
 - Re-audits the result and returns the **remaining** issues, so a pipeline can
   tell "fixed" from "fixed and verified".
+- Reports changes that were intentionally **not** applied (for example W010 and
+  W011 on an NCX-only book) as `skipped:` lines, separate from the `applied`
+  changelog, so re-running a fix never claims to have changed something it did
+  not.
+- Is byte-reproducible: the same input always produces the same output archive.
+
+Every emitted member name is validated against the archive root (no absolute
+paths, no `..` segments), so a fix can never write outside the EPUB.
 
 ## How it works
 
@@ -175,8 +205,22 @@ book.epub ──unzip──▶ OPF (metadata, manifest, spine)
 requires. `src/rules.ts` is pure and testable. `src/fix.ts` returns the best
 archive it can build when the input is a real EPUB. If the bytes cannot be
 unzipped, `audit` and `fixEpub` throw `EpubReadError`; the CLI prints the reason
-and exits `2` instead of reporting a clean book. `fix` also throws if the
-repaired archive cannot be re-audited.
+and exits `2` for a parse failure or `3` when the file could not be read, instead
+of reporting a clean book. `fix` also throws if the repaired archive cannot be
+re-audited.
+
+### Resource limits
+
+An EPUB is untrusted input, so `readEpub` enforces hard caps from the ZIP
+central directory **before** any member is allocated: at most `65535` members,
+`512 MiB` per member, and `1 GiB` uncompressed in total (see
+`DEFAULT_UNZIP_LIMITS` in `src/zip.ts`). A small archive that declares a huge
+member fails with `EpubReadError` instead of exhausting memory. The limits can
+be overridden per call for callers that need different ceilings.
+
+Output is reproducible: `writeEpub` stamps a fixed modification time and an
+entry order derived from the input, so two fixes of the same book are identical
+byte-for-byte.
 
 ## CI
 
@@ -215,14 +259,16 @@ describes the issues remaining after the fix.
 
 | Gate | Result |
 |---|---|
-| `bun test` | 36 tests |
+| `bun test` | 63 tests |
 | `bunx tsc --noEmit` | clean (strict) |
 | fixtures | `bun run make-fixtures` writes a broken and a clean EPUB |
 | round trip | `fix` → `audit` ends with zero errors |
 
 The suite includes a zip round-trip that asserts the `mimetype` member is first
-and stored, a rule test against a fixture with known defects, and an
-end-to-end fix that re-audits the output.
+and stored, a zip-bomb member that must be rejected before allocation, a
+reproducibility check on `fix`, a path-traversal check on read and write, the
+full CLI contract (exit codes and flag strictness), a rule test against a
+fixture with known defects, and an end-to-end fix that re-audits the output.
 
 ## Privacy
 
