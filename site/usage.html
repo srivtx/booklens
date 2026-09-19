@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usage — booklens</title>
+<meta name="description" content="booklens CLI flags, exit codes, JSON output, and the TypeScript library API.">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="Usage — booklens">
+<meta property="og:description" content="booklens CLI flags, exit codes, JSON output, and the TypeScript library API.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://booklens-srivtx.vercel.app/usage.html">
+<meta property="og:image" content="https://booklens-srivtx.vercel.app/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Usage — booklens">
+<meta name="twitter:description" content="booklens CLI flags, exit codes, JSON output, and the TypeScript library API.">
+<meta name="twitter:image" content="https://booklens-srivtx.vercel.app/assets/og.png">
+<link rel="canonical" href="https://booklens-srivtx.vercel.app/usage.html">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f766e'/%3E%3Ccircle cx='14' cy='14' r='6.4' fill='none' stroke='white' stroke-width='2.4'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/lens.css">
+<link rel="stylesheet" href="assets/theme.css">
+<script>
+(function () {
+  try {
+    var stored = window.localStorage.getItem("booklens-theme");
+    if (stored === "dark" || stored === "light") {
+      document.documentElement.setAttribute("data-theme", stored);
+    }
+  } catch (err) {}
+})();
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="nav" id="top">
+  <div class="container nav__inner">
+    <a class="brand" href="index.html" aria-label="booklens home">
+      <span class="brand__mark" aria-hidden="true">
+        <svg class="icon" viewBox="0 0 32 32" focusable="false">
+          <circle cx="14" cy="14" r="8.4"></circle>
+          <line x1="20.4" y1="20.4" x2="27.5" y2="27.5"></line>
+          <circle cx="14" cy="14" r="3" style="fill:currentColor;stroke:none"></circle>
+        </svg>
+      </span>
+      <span class="brand__name">booklens</span>
+      <span class="brand__tag">EPUB accessibility audit</span>
+    </a>
+    <nav class="nav__links" id="site-nav" aria-label="Sections">
+      <a href="rules.html">Rules</a>
+      <a href="usage.html">Usage</a>
+      <a href="ci.html">CI</a>
+      <a href="index.html#playground">Playground</a>
+      <a href="https://github.com/srivtx/booklens">GitHub</a>
+    </nav>
+    <div class="nav__actions">
+      <button type="button" class="nav__toggle btn btn--ghost btn--sm" id="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Open navigation">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+      </button>
+      <button type="button" class="btn btn--ghost btn--sm" id="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+        <span id="theme-toggle-text">Theme</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <div class="container">
+    <div class="docs">
+      <nav class="docs__nav" aria-label="Documentation">
+        <h2>booklens</h2>
+        <ul>
+          <li><a href="index.html">Overview</a></li>
+          <li><a href="rules.html">Rules</a></li>
+          <li><a href="usage.html" aria-current="page">Usage</a></li>
+          <li><a href="ci.html">CI</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+        </ul>
+      </nav>
+
+      <article class="docs__body">
+        <div class="docs__head">
+          <p class="eyebrow">Reference</p>
+          <h1>Usage</h1>
+          <p>The same rule set runs from the command line or from TypeScript. <code>audit</code> reports, <code>fix</code> writes a repaired EPUB, and both return the same result object.</p>
+        </div>
+
+        <h2>Install</h2>
+        <p>booklens is not published to npm. Install it with the one-line script, or run it without installing.</p>
+        <div class="term" aria-label="Install commands">
+          <div class="term__bar">
+            <span class="term__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="term__title">install</span>
+          </div>
+          <pre class="term__body term__body--wrap"><span class="ln"><span class="dim"># One-line install (installs the `booklens` binary)</span></span><span class="ln"><span class="p">$ </span><span class="cmd">curl -fsSL https://raw.githubusercontent.com/srivtx/booklens/main/install.sh | sh</span></span><span class="ln"></span><span class="ln"><span class="dim"># Or run once, without installing</span></span><span class="ln"><span class="p">$ </span><span class="cmd">bunx github:srivtx/booklens#main audit book.epub</span></span><span class="ln"></span><span class="ln"><span class="dim"># Install globally</span></span><span class="ln"><span class="p">$ </span><span class="cmd">bun add -g github:srivtx/booklens</span></span><span class="ln"><span class="p">$ </span><span class="cmd">booklens audit book.epub</span></span><span class="ln"></span><span class="ln"><span class="dim"># Add to a project as a dev dependency</span></span><span class="ln"><span class="p">$ </span><span class="cmd">bun add -d github:srivtx/booklens</span></span></pre>
+        </div>
+
+        <h2>Commands and flags</h2>
+        <div class="table-wrap">
+          <table>
+            <caption>Command-line options.</caption>
+            <thead>
+              <tr>
+                <th scope="col">Flag</th>
+                <th scope="col">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>booklens audit &lt;file&gt;</code></td><td>Report accessibility issues in an EPUB.</td></tr>
+              <tr><td><code>booklens fix &lt;file&gt;</code></td><td>Write a repaired EPUB (default <code>&lt;input&gt;.fixed.epub</code>).</td></tr>
+              <tr><td><code>-o &lt;path&gt;</code></td><td><code>fix</code>: output path.</td></tr>
+              <tr><td><code>--dir &lt;path&gt;</code></td><td>Read every <code>.epub</code> in <code>&lt;path&gt;</code> (non-recursive, sorted).</td></tr>
+              <tr><td><code>--json</code></td><td><code>audit</code>: print the full result as JSON.</td></tr>
+              <tr><td><code>--quiet</code>, <code>-q</code></td><td>Print a single summary line per file.</td></tr>
+              <tr><td><code>--sarif &lt;path&gt;</code></td><td>Write a SARIF 2.1.0 report to <code>&lt;path&gt;</code>.</td></tr>
+              <tr><td><code>--fail-on &lt;level&gt;</code></td><td>Exit <code>1</code> at or above this severity: <code>error</code> (default), <code>warning</code>, <code>info</code>, or <code>none</code>.</td></tr>
+              <tr><td><code>--language &lt;lang&gt;</code></td><td><code>fix</code>: language to write when one is missing (default <code>en</code>).</td></tr>
+              <tr><td><code>--title &lt;title&gt;</code></td><td><code>fix</code>: title to write when one is missing.</td></tr>
+              <tr><td><code>--only &lt;codes&gt;</code></td><td><code>fix</code>: comma-separated rule codes to apply (for example <code>E001,E002,W010</code>).</td></tr>
+              <tr><td><code>--dry-run</code></td><td><code>fix</code>: report changes without writing a file.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Full help</h2>
+        <div class="term" aria-label="booklens help output">
+          <div class="term__bar">
+            <span class="term__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="term__title">booklens --help</span>
+          </div>
+          <pre class="term__body term__body--wrap"><span class="ln"><span class="b">booklens 0.2.0</span></span><span class="ln"></span><span class="ln"><span class="acc">Usage:</span></span><span class="ln">  <span class="cmd">booklens audit &lt;file&gt; [options]</span></span><span class="ln">  <span class="cmd">booklens audit --dir &lt;path&gt; [options]</span></span><span class="ln">  <span class="cmd">booklens fix &lt;file&gt; [options]</span></span><span class="ln">  <span class="cmd">booklens fix --dir &lt;path&gt; [options]</span></span><span class="ln"></span><span class="ln"><span class="acc">Commands:</span></span><span class="ln">  audit               Report accessibility issues in an EPUB.</span><span class="ln">  fix                 Write a repaired EPUB (default: &lt;input&gt;.fixed.epub).</span><span class="ln"></span><span class="ln"><span class="acc">Options:</span></span><span class="ln">  -o &lt;path&gt;           fix: output path (single input only)</span><span class="ln">  --dir &lt;path&gt;        Read every .epub in &lt;path&gt; (non-recursive, sorted)</span><span class="ln">  --json              Print machine-readable JSON; one object for a single</span><span class="ln">                      input, an array when reading more than one</span><span class="ln">  --quiet, -q         Print a single summary line per file</span><span class="ln">  --sarif &lt;path&gt;      Write a SARIF 2.1.0 report to &lt;path&gt;</span><span class="ln">  --fail-on &lt;level&gt;   Exit 1 at or above this severity: error (default),</span><span class="ln">                      warning, info, or none</span><span class="ln">  --language &lt;lang&gt;   fix: language to write when one is missing (default: en)</span><span class="ln">  --title &lt;title&gt;     fix: title to write when one is missing</span><span class="ln">  --only &lt;codes&gt;      fix: comma-separated rule codes to apply</span><span class="ln">                      (e.g. --only E001,E002,W010)</span><span class="ln">  --dry-run           fix: report changes without writing a file</span><span class="ln">  -v, --version       Print the version and exit</span><span class="ln">  -h, --help          Print this help and exit</span><span class="ln"></span><span class="ln">Every value flag also accepts --flag=value. A lone -- ends option parsing.</span><span class="ln">Unknown options are rejected.</span><span class="ln"></span><span class="ln"><span class="acc">Exit codes:</span></span><span class="ln">  0  success; no findings at or above --fail-on</span><span class="ln">  1  findings at or above --fail-on</span><span class="ln">  2  invalid usage, or a file that cannot be parsed as an EPUB</span><span class="ln">  3  an input file/directory or output report could not be read/written</span><span class="ln"></span><span class="ln"><span class="acc">Examples:</span></span><span class="ln">  booklens audit book.epub</span><span class="ln">  booklens audit book.epub --json --sarif booklens.sarif</span><span class="ln">  booklens audit --dir public --quiet --fail-on warning</span><span class="ln">  booklens fix book.epub -o book.fixed.epub --language en --title "My Book"</span><span class="ln">  booklens fix book.epub --only E001,E002 --dry-run</span></pre>
+        </div>
+
+        <h2>Examples</h2>
+        <div class="term" aria-label="Example commands">
+          <div class="term__bar">
+            <span class="term__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="term__title">examples</span>
+          </div>
+          <pre class="term__body term__body--wrap"><span class="ln"><span class="dim"># Audit: human output, exit 1 at or above the threshold</span></span><span class="ln"><span class="p">$ </span><span class="cmd">booklens audit book.epub</span></span><span class="ln"></span><span class="ln"><span class="dim"># Audit: machine-readable for CI</span></span><span class="ln"><span class="p">$ </span><span class="cmd">booklens audit book.epub --json</span></span><span class="ln"></span><span class="ln"><span class="dim"># Fix: write a repaired EPUB</span></span><span class="ln"><span class="p">$ </span><span class="cmd">booklens fix book.epub -o book.fixed.epub --language en --title "My Book"</span></span><span class="ln"></span><span class="ln"><span class="dim"># Preview the fixes without writing anything</span></span><span class="ln"><span class="p">$ </span><span class="cmd">booklens fix book.epub --dry-run</span></span><span class="ln"></span><span class="ln"><span class="dim"># Apply only selected fixes</span></span><span class="ln"><span class="p">$ </span><span class="cmd">booklens fix book.epub --only E001,E002,W010</span></span><span class="ln"></span><span class="ln"><span class="dim"># Emit SARIF for GitHub code scanning</span></span><span class="ln"><span class="p">$ </span><span class="cmd">booklens audit book.epub --sarif booklens.sarif</span></span></pre>
+        </div>
+
+        <h2>Exit codes</h2>
+        <div class="table-wrap">
+          <table>
+            <caption>The exit code is the CI gate.</caption>
+            <thead>
+              <tr>
+                <th scope="col">Code</th>
+                <th scope="col">Meaning</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>0</code></td><td>Success; no findings at or above <code>--fail-on</code>.</td></tr>
+              <tr><td><code>1</code></td><td>Findings at or above <code>--fail-on</code>, or invalid arguments.</td></tr>
+              <tr><td><code>2</code></td><td>The input could not be read or is not a valid EPUB.</td></tr>
+              <tr><td><code>3</code></td><td>An input file/directory or output report could not be read/written.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><code>--fail-on</code> affects only the exit code. Every issue is still reported and included in SARIF output.</p>
+
+        <h2>JSON output</h2>
+        <p>With <code>--json</code>, each issue is an object like this one, with <code>code</code>, <code>severity</code>, <code>message</code>, <code>location</code>, <code>fixable</code>, and <code>wcag</code>. A single input produces one object; more than one produces an array.</p>
+        <pre class="code"><code>{
+  "file": "fixtures/inaccessible.epub",
+  "issues": [
+    {
+      "code": "E008",
+      "severity": "error",
+      "message": "1 image(s) missing an alt attribute.",
+      "location": "OEBPS/chapter1.xhtml",
+      "fixable": true,
+      "wcag": "1.1.1"
+    }
+  ]
+}</code></pre>
+
+        <h2>Library</h2>
+        <p>The same rules power the CLI and the library. Import them directly when you are already in TypeScript.</p>
+        <pre class="code"><code>import { audit, fixEpub } from "booklens";
+
+const report = audit(bytes, "book.epub");
+
+if (report.counts.error &gt; 0) {
+  const { data, applied, remaining } = fixEpub(bytes, {
+    language: "en",
+    title: "My Book",
+  });
+  // data: repaired EPUB bytes, applied: changelog, remaining: re-audit issues
+}</code></pre>
+
+        <div class="docs__foot">
+          <a href="rules.html">← Rules</a>
+          <a href="ci.html">CI →</a>
+        </div>
+      </article>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <span class="brand__mark" aria-hidden="true">
+          <svg class="icon" viewBox="0 0 32 32" focusable="false">
+            <circle cx="14" cy="14" r="8.4"></circle>
+            <line x1="20.4" y1="20.4" x2="27.5" y2="27.5"></line>
+            <circle cx="14" cy="14" r="3" style="fill:currentColor;stroke:none"></circle>
+          </svg>
+        </span>
+        <div>
+          <p>booklens</p>
+          <p class="muted">Offline EPUB accessibility audit and fix.</p>
+        </div>
+      </div>
+      <nav aria-label="The Lens suite">
+        <h2>The Lens suite</h2>
+        <ul>
+          <li><a href="https://officelens-srivtx.vercel.app">officelens</a></li>
+          <li><a href="https://odflens-srivtx.vercel.app">odflens</a></li>
+          <li><a href="https://iconlens-srivtx.vercel.app">iconlens</a></li>
+          <li><a href="https://waxseal-srivtx.vercel.app">waxseal</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Project">
+        <h2>Project</h2>
+        <ul>
+          <li><a href="https://booklens-srivtx.vercel.app">Live site</a></li>
+          <li><a href="https://github.com/srivtx/booklens">Repository</a></li>
+          <li><a href="https://github.com/srivtx/booklens/blob/main/LICENSE">MIT license</a></li>
+          <li><a href="https://github.com/srivtx/booklens/issues">Issues</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="footer__meta">
+      <p>by svx · MIT licensed. Part of <a href="https://lenses-srivtx.vercel.app">Lenses</a> — offline accessibility and integrity tools.</p>
+      <a href="#top">Back to top</a>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/site.js" defer></script>
+</body>
+</html>

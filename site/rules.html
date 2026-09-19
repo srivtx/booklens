@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rules — booklens</title>
+<meta name="description" content="The fifteen booklens rules, how an EPUB is audited, and what fix changes.">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="Rules — booklens">
+<meta property="og:description" content="The fifteen booklens rules and how an EPUB is audited.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://booklens-srivtx.vercel.app/rules.html">
+<meta property="og:image" content="https://booklens-srivtx.vercel.app/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Rules — booklens">
+<meta name="twitter:description" content="The fifteen booklens rules and how an EPUB is audited.">
+<meta name="twitter:image" content="https://booklens-srivtx.vercel.app/assets/og.png">
+<link rel="canonical" href="https://booklens-srivtx.vercel.app/rules.html">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f766e'/%3E%3Ccircle cx='14' cy='14' r='6.4' fill='none' stroke='white' stroke-width='2.4'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/lens.css">
+<link rel="stylesheet" href="assets/theme.css">
+<script>
+(function () {
+  try {
+    var stored = window.localStorage.getItem("booklens-theme");
+    if (stored === "dark" || stored === "light") {
+      document.documentElement.setAttribute("data-theme", stored);
+    }
+  } catch (err) {}
+})();
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="nav" id="top">
+  <div class="container nav__inner">
+    <a class="brand" href="index.html" aria-label="booklens home">
+      <span class="brand__mark" aria-hidden="true">
+        <svg class="icon" viewBox="0 0 32 32" focusable="false">
+          <circle cx="14" cy="14" r="8.4"></circle>
+          <line x1="20.4" y1="20.4" x2="27.5" y2="27.5"></line>
+          <circle cx="14" cy="14" r="3" style="fill:currentColor;stroke:none"></circle>
+        </svg>
+      </span>
+      <span class="brand__name">booklens</span>
+      <span class="brand__tag">EPUB accessibility audit</span>
+    </a>
+    <nav class="nav__links" id="site-nav" aria-label="Sections">
+      <a href="rules.html">Rules</a>
+      <a href="usage.html">Usage</a>
+      <a href="ci.html">CI</a>
+      <a href="index.html#playground">Playground</a>
+      <a href="https://github.com/srivtx/booklens">GitHub</a>
+    </nav>
+    <div class="nav__actions">
+      <button type="button" class="nav__toggle btn btn--ghost btn--sm" id="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Open navigation">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+      </button>
+      <button type="button" class="btn btn--ghost btn--sm" id="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+        <span id="theme-toggle-text">Theme</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <div class="container">
+    <div class="docs">
+      <nav class="docs__nav" aria-label="Documentation">
+        <h2>booklens</h2>
+        <ul>
+          <li><a href="index.html">Overview</a></li>
+          <li><a href="rules.html" aria-current="page">Rules</a></li>
+          <li><a href="usage.html">Usage</a></li>
+          <li><a href="ci.html">CI</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+        </ul>
+      </nav>
+
+      <article class="docs__body">
+        <div class="docs__head">
+          <p class="eyebrow">Reference</p>
+          <h1>The rules</h1>
+          <p>Fifteen checks across metadata, structure, navigation, and references. Each one describes a specific way an EPUB breaks for assistive technology, and carries the WCAG reference it answers to.</p>
+        </div>
+
+        <h2>How a book is checked</h2>
+        <p>The pipeline is local unzip, XML and HTML parsing, then a rewrite of the archive. There is no network step.</p>
+        <ol class="steps">
+          <li class="step">
+            <h3>Audit</h3>
+            <p>Unzip the EPUB and run fifteen rules against EPUB Accessibility 1.1 and WCAG 2.x. Output is human-readable, JSON, or SARIF.</p>
+          </li>
+          <li class="step">
+            <h3>Fix</h3>
+            <p>Repair metadata, language, alt placeholders, and navigation. Apply every fix, or pass <code>--only</code> for a subset.</p>
+          </li>
+          <li class="step">
+            <h3>Verify</h3>
+            <p>Re-audit the repaired archive and return what remains, so a pipeline can fail when a human still needs to make a judgement.</p>
+          </li>
+        </ol>
+
+        <h2>What fix changes</h2>
+        <p><code>fix</code> writes a repaired EPUB (default <code>&lt;input&gt;.fixed.epub</code>) and logs every change it makes. It applies the fixes below.</p>
+        <dl class="defgrid">
+          <div>
+            <dt>Metadata</dt>
+            <dd>Adds <code>dc:language</code>, <code>dc:title</code>, and the five <code>schema:*</code> accessibility metas when they are missing.</dd>
+          </div>
+          <div>
+            <dt>Language</dt>
+            <dd>Sets <code>lang</code> and <code>xml:lang</code> on every spine document so assistive technology reads the correct language.</dd>
+          </div>
+          <div>
+            <dt>Alt placeholders</dt>
+            <dd>Writes <code>alt="TODO: describe image"</code> on images with no <code>alt</code> attribute and logs every changed image, so a human can replace the placeholder.</dd>
+          </div>
+          <div>
+            <dt>Navigation</dt>
+            <dd>Adds a landmarks nav, builds a page-list when the book has pagebreaks, and generates a whole navigation document, updating the manifest, when the book has none.</dd>
+          </div>
+        </dl>
+
+        <h2>The fifteen rules</h2>
+        <div class="table-wrap">
+          <table>
+            <caption>Every rule booklens checks against EPUB Accessibility 1.1 and WCAG 2.x. The <code>Fixable</code> column matches the library.</caption>
+            <thead>
+              <tr>
+                <th scope="col">Code</th>
+                <th scope="col">Severity</th>
+                <th scope="col">WCAG</th>
+                <th scope="col">Check</th>
+                <th scope="col">Fixable</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>E001</code></td><td><span class="chip chip--error">error</span></td><td>3.1.1</td><td>Missing <code>dc:language</code></td><td><span class="chip chip--ok">auto</span></td></tr>
+              <tr><td><code>E002</code></td><td><span class="chip chip--error">error</span></td><td>2.4.2</td><td>Missing <code>dc:title</code></td><td><span class="chip chip--ok">auto</span></td></tr>
+              <tr><td><code>E003</code></td><td><span class="chip chip--error">error</span></td><td>1.3.1</td><td>Missing <code>schema:accessMode</code></td><td><span class="chip chip--ok">auto</span></td></tr>
+              <tr><td><code>E004</code></td><td><span class="chip chip--error">error</span></td><td>1.3.1</td><td>Missing <code>schema:accessModeSufficient</code></td><td><span class="chip chip--ok">auto</span></td></tr>
+              <tr><td><code>E005</code></td><td><span class="chip chip--error">error</span></td><td>1.3.1</td><td>Missing <code>schema:accessibilityFeature</code></td><td><span class="chip chip--ok">auto</span></td></tr>
+              <tr><td><code>E006</code></td><td><span class="chip chip--error">error</span></td><td>1.3.1</td><td>Missing <code>schema:accessibilityHazard</code></td><td><span class="chip chip--ok">auto</span></td></tr>
+              <tr><td><code>W007</code></td><td><span class="chip chip--warning">warning</span></td><td>1.3.1</td><td>Missing <code>schema:accessibilitySummary</code></td><td><span class="chip chip--ok">auto</span></td></tr>
+              <tr><td><code>E008</code></td><td><span class="chip chip--error">error</span></td><td>1.1.1</td><td>Image with no <code>alt</code> attribute</td><td><span class="chip chip--ok">TODO placeholder</span></td></tr>
+              <tr><td><code>E009</code></td><td><span class="chip chip--error">error</span></td><td>3.1.1</td><td><code>&lt;html&gt;</code> without <code>lang</code> / <code>xml:lang</code></td><td><span class="chip chip--ok">auto</span></td></tr>
+              <tr><td><code>W010</code></td><td><span class="chip chip--warning">warning</span></td><td>1.3.1</td><td>Navigation missing a landmarks nav</td><td><span class="chip chip--warning">XHTML nav only</span></td></tr>
+              <tr><td><code>W011</code></td><td><span class="chip chip--info">info / warning</span></td><td>1.3.1</td><td>Navigation missing a page-list when the book has pagebreaks</td><td><span class="chip chip--warning">when pagebreaks exist</span></td></tr>
+              <tr><td><code>W012</code></td><td><span class="chip chip--warning">warning</span></td><td>1.3.1</td><td>Headings skip a level or do not begin with an <code>h1</code></td><td><span class="chip">reported</span></td></tr>
+              <tr><td><code>W013</code></td><td><span class="chip chip--warning">warning</span></td><td>1.3.1</td><td>Table has no header cells</td><td><span class="chip">reported</span></td></tr>
+              <tr><td><code>W014</code></td><td><span class="chip chip--warning">warning</span></td><td>2.4.4</td><td>Link text is a raw URL</td><td><span class="chip">reported</span></td></tr>
+              <tr><td><code>E015</code></td><td><span class="chip chip--error">error</span></td><td>2.4.1</td><td>Publication has no navigation document</td><td><span class="chip chip--ok">writes nav + manifest</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted">The rules reported but not auto-fixed are the ones where a repair would require judgement. Guessing a heading level or a link label silently corrupts the book; booklens leaves those to a human and says so. W010 and W011 can only be written into an XHTML navigation document; for an EPUB 2 / NCX-only book <code>fix</code> skips them with a changelog line instead of corrupting the NCX. W011 is a <code>warning</code> when the book contains pagebreaks and an <code>info</code> note when it does not.</p>
+
+        <h2>Example run</h2>
+        <p>An audit of a deliberately inaccessible book, as the CLI prints it:</p>
+        <div class="term" aria-label="Example booklens audit run">
+          <div class="term__bar">
+            <span class="term__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="term__title">booklens audit fixtures/inaccessible.epub</span>
+          </div>
+          <pre class="term__body term__body--wrap"><span class="ln"><span class="p">$ </span><span class="cmd">booklens audit fixtures/inaccessible.epub</span></span><span class="ln"><span class="err">error</span><span class="dim"> E008 OEBPS/chapter1.xhtml 1 image(s) missing an alt attribute.</span></span><span class="ln"><span class="err">error</span><span class="dim"> E009 OEBPS/chapter1.xhtml html element is missing both lang and xml:lang attributes.</span></span><span class="ln"><span class="warn">warning</span><span class="dim"> W012 OEBPS/chapter1.xhtml Headings skip a level or do not begin with an h1.</span></span><span class="ln"><span class="warn">warning</span><span class="dim"> W013 OEBPS/chapter1.xhtml Table has no header cells (no &lt;th&gt; or role="columnheader").</span></span><span class="ln"><span class="warn">warning</span><span class="dim"> W014 OEBPS/chapter1.xhtml Link text is a raw URL: https://example.com</span></span><span class="ln"><span class="err">error</span><span class="dim"> E001 OEBPS/content.opf Publication is missing a dc:language declaration.</span></span><span class="ln"><span class="err">error</span><span class="dim"> E003 OEBPS/content.opf Publication is missing schema:accessMode metadata.</span></span><span class="ln"><span class="warn">warning</span><span class="dim"> W010 OEBPS/nav.xhtml Navigation document is missing a landmarks nav element.</span></span><span class="ln"><span class="info">info</span><span class="dim"> W011 OEBPS/nav.xhtml Navigation document has no page-list; the publication contains no pagebreaks.</span></span><span class="ln"><span class="dim">…</span></span><span class="ln"><span class="b">inaccessible.epub</span><span class="dim">: </span><span class="err">10 error(s)</span><span class="dim">, </span><span class="warn">8 warning(s)</span><span class="dim">, </span><span class="info">1 info</span></span></pre>
+        </div>
+
+        <div class="docs__foot">
+          <a href="index.html">← Overview</a>
+          <a href="usage.html">Usage →</a>
+        </div>
+      </article>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <span class="brand__mark" aria-hidden="true">
+          <svg class="icon" viewBox="0 0 32 32" focusable="false">
+            <circle cx="14" cy="14" r="8.4"></circle>
+            <line x1="20.4" y1="20.4" x2="27.5" y2="27.5"></line>
+            <circle cx="14" cy="14" r="3" style="fill:currentColor;stroke:none"></circle>
+          </svg>
+        </span>
+        <div>
+          <p>booklens</p>
+          <p class="muted">Offline EPUB accessibility audit and fix.</p>
+        </div>
+      </div>
+      <nav aria-label="The Lens suite">
+        <h2>The Lens suite</h2>
+        <ul>
+          <li><a href="https://officelens-srivtx.vercel.app">officelens</a></li>
+          <li><a href="https://odflens-srivtx.vercel.app">odflens</a></li>
+          <li><a href="https://iconlens-srivtx.vercel.app">iconlens</a></li>
+          <li><a href="https://waxseal-srivtx.vercel.app">waxseal</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Project">
+        <h2>Project</h2>
+        <ul>
+          <li><a href="https://booklens-srivtx.vercel.app">Live site</a></li>
+          <li><a href="https://github.com/srivtx/booklens">Repository</a></li>
+          <li><a href="https://github.com/srivtx/booklens/blob/main/LICENSE">MIT license</a></li>
+          <li><a href="https://github.com/srivtx/booklens/issues">Issues</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="footer__meta">
+      <p>by svx · MIT licensed. Part of <a href="https://lenses-srivtx.vercel.app">Lenses</a> — offline accessibility and integrity tools.</p>
+      <a href="#top">Back to top</a>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/site.js" defer></script>
+</body>
+</html>

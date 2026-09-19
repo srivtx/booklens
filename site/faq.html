@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FAQ — booklens</title>
+<meta name="description" content="booklens scope, limitations, and how it compares to DAISY ACE, EPUBCheck, Access-Aide, and EPUB Accessibility 1.1.">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="FAQ — booklens">
+<meta property="og:description" content="booklens scope, limitations, and how it compares to other EPUB tooling.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://booklens-srivtx.vercel.app/faq.html">
+<meta property="og:image" content="https://booklens-srivtx.vercel.app/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="FAQ — booklens">
+<meta name="twitter:description" content="booklens scope, limitations, and how it compares to other EPUB tooling.">
+<meta name="twitter:image" content="https://booklens-srivtx.vercel.app/assets/og.png">
+<link rel="canonical" href="https://booklens-srivtx.vercel.app/faq.html">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f766e'/%3E%3Ccircle cx='14' cy='14' r='6.4' fill='none' stroke='white' stroke-width='2.4'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/lens.css">
+<link rel="stylesheet" href="assets/theme.css">
+<script>
+(function () {
+  try {
+    var stored = window.localStorage.getItem("booklens-theme");
+    if (stored === "dark" || stored === "light") {
+      document.documentElement.setAttribute("data-theme", stored);
+    }
+  } catch (err) {}
+})();
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="nav" id="top">
+  <div class="container nav__inner">
+    <a class="brand" href="index.html" aria-label="booklens home">
+      <span class="brand__mark" aria-hidden="true">
+        <svg class="icon" viewBox="0 0 32 32" focusable="false">
+          <circle cx="14" cy="14" r="8.4"></circle>
+          <line x1="20.4" y1="20.4" x2="27.5" y2="27.5"></line>
+          <circle cx="14" cy="14" r="3" style="fill:currentColor;stroke:none"></circle>
+        </svg>
+      </span>
+      <span class="brand__name">booklens</span>
+      <span class="brand__tag">EPUB accessibility audit</span>
+    </a>
+    <nav class="nav__links" id="site-nav" aria-label="Sections">
+      <a href="rules.html">Rules</a>
+      <a href="usage.html">Usage</a>
+      <a href="ci.html">CI</a>
+      <a href="index.html#playground">Playground</a>
+      <a href="https://github.com/srivtx/booklens">GitHub</a>
+    </nav>
+    <div class="nav__actions">
+      <button type="button" class="nav__toggle btn btn--ghost btn--sm" id="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Open navigation">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+      </button>
+      <button type="button" class="btn btn--ghost btn--sm" id="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+        <span id="theme-toggle-text">Theme</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <div class="container">
+    <div class="docs">
+      <nav class="docs__nav" aria-label="Documentation">
+        <h2>booklens</h2>
+        <ul>
+          <li><a href="index.html">Overview</a></li>
+          <li><a href="rules.html">Rules</a></li>
+          <li><a href="usage.html">Usage</a></li>
+          <li><a href="ci.html">CI</a></li>
+          <li><a href="faq.html" aria-current="page">FAQ</a></li>
+        </ul>
+      </nav>
+
+      <article class="docs__body">
+        <div class="docs__head">
+          <p class="eyebrow">Reference</p>
+          <h1>FAQ</h1>
+          <p>Scope, limits, and where booklens fits next to the tools you already use.</p>
+        </div>
+
+        <h2>Questions</h2>
+        <div class="faq">
+          <details>
+            <summary>Does my book leave my machine?</summary>
+            <div class="faq__body"><p>No. The CLI and the library have no network code, and the browser playground unzips and parses everything locally. Nothing is uploaded and no request is made.</p></div>
+          </details>
+          <details>
+            <summary>What exactly gets fixed?</summary>
+            <div class="faq__body"><p>Missing <code>dc:language</code>, <code>dc:title</code>, and the five <code>schema:*</code> accessibility metas; missing <code>lang</code> / <code>xml:lang</code>; missing <code>alt</code> attributes as logged <code>TODO</code> placeholders; and navigation landmarks, page-lists, or a whole navigation document (with its manifest entry).</p></div>
+          </details>
+          <details>
+            <summary>Why are some rules reported but not fixed?</summary>
+            <div class="faq__body"><p>Because a repair needs judgement. Guessing a heading level or a link label can silently corrupt a book, so booklens reports those and leaves the decision to a human.</p></div>
+          </details>
+          <details>
+            <summary>Can it run in CI and fail a pull request?</summary>
+            <div class="faq__body"><p>Yes. <code>audit</code> exits <code>1</code> on any finding at or above the threshold and can emit SARIF 2.1.0 for GitHub code scanning. <code>--fail-on</code> controls the threshold.</p></div>
+          </details>
+          <details>
+            <summary>What do the exit codes mean?</summary>
+            <div class="faq__body"><p><code>0</code> for success with no findings at or above <code>--fail-on</code>; <code>1</code> for findings at or above the threshold or invalid arguments; and <code>2</code> when the input could not be read or is not a valid EPUB.</p></div>
+          </details>
+          <details>
+            <summary>Does it handle other file formats?</summary>
+            <div class="faq__body"><p>No. booklens is EPUB only. Office, ODF, and SVG formats are covered by sibling tools in the suite, linked in the footer.</p></div>
+          </details>
+        </div>
+
+        <h2>Limitations</h2>
+        <div class="callout" role="note">
+          <h3>Repair with judgement left in</h3>
+          <p>booklens handles EPUB only. It fixes metadata, language, alt placeholders, and navigation. It does not repair layout or reading order, and it does not invent alt text: it writes <code>alt="TODO: describe image"</code> and logs each change for a human to replace.</p>
+          <ul>
+            <li>It does not reconstruct reading order or layout.</li>
+            <li>It does not generate alt text; placeholders are logged, not guessed.</li>
+            <li>It does not handle other formats. The rest of the suite covers DOCX/PPTX (officelens), ODF (odflens), and standalone SVG (iconlens).</li>
+          </ul>
+        </div>
+
+        <h2>How it compares</h2>
+        <div class="deflist">
+          <div class="defrow">
+            <dt class="defrow__term">DAISY ACE</dt>
+            <dd class="defrow__def">Reports on EPUB Accessibility 1.1 and WCAG 2.x and produces a human-readable report. It audits but does not write a corrected book. <a href="https://github.com/daisy/ace">github.com/daisy/ace</a></dd>
+          </div>
+          <div class="defrow">
+            <dt class="defrow__term">EPUBCheck</dt>
+            <dd class="defrow__def">Validates EPUB conformance. It says whether a book is valid, not whether it is accessible, and it does not repair it. <a href="https://github.com/w3c/epubcheck">github.com/w3c/epubcheck</a></dd>
+          </div>
+          <div class="defrow">
+            <dt class="defrow__term">Access-Aide</dt>
+            <dd class="defrow__def">A Sigil GUI plugin that repairs content. It is not scriptable, cannot run in CI, and pauses for manual alt-text entry. <a href="https://github.com/kevinhendricks/Access-Aide">github.com/kevinhendricks/Access-Aide</a></dd>
+          </div>
+          <div class="defrow">
+            <dt class="defrow__term">EPUB Accessibility 1.1</dt>
+            <dd class="defrow__def">Defines the metadata and WCAG conformance requirements an accessible EPUB must meet, but ships no implementation you can run in CI. <a href="https://www.w3.org/TR/epub-a11y-11/">w3.org/TR/epub-a11y-11</a></dd>
+          </div>
+        </div>
+
+        <div class="docs__foot">
+          <a href="ci.html">← CI</a>
+          <a href="index.html">Overview →</a>
+        </div>
+      </article>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <span class="brand__mark" aria-hidden="true">
+          <svg class="icon" viewBox="0 0 32 32" focusable="false">
+            <circle cx="14" cy="14" r="8.4"></circle>
+            <line x1="20.4" y1="20.4" x2="27.5" y2="27.5"></line>
+            <circle cx="14" cy="14" r="3" style="fill:currentColor;stroke:none"></circle>
+          </svg>
+        </span>
+        <div>
+          <p>booklens</p>
+          <p class="muted">Offline EPUB accessibility audit and fix.</p>
+        </div>
+      </div>
+      <nav aria-label="The Lens suite">
+        <h2>The Lens suite</h2>
+        <ul>
+          <li><a href="https://officelens-srivtx.vercel.app">officelens</a></li>
+          <li><a href="https://odflens-srivtx.vercel.app">odflens</a></li>
+          <li><a href="https://iconlens-srivtx.vercel.app">iconlens</a></li>
+          <li><a href="https://waxseal-srivtx.vercel.app">waxseal</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Project">
+        <h2>Project</h2>
+        <ul>
+          <li><a href="https://booklens-srivtx.vercel.app">Live site</a></li>
+          <li><a href="https://github.com/srivtx/booklens">Repository</a></li>
+          <li><a href="https://github.com/srivtx/booklens/blob/main/LICENSE">MIT license</a></li>
+          <li><a href="https://github.com/srivtx/booklens/issues">Issues</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="footer__meta">
+      <p>by svx · MIT licensed. Part of <a href="https://lenses-srivtx.vercel.app">Lenses</a> — offline accessibility and integrity tools.</p>
+      <a href="#top">Back to top</a>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/site.js" defer></script>
+</body>
+</html>
