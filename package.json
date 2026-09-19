@@ -1,13 +1,18 @@
 {
-  "name": "epub-a11y",
+  "name": "booklens",
   "version": "0.1.0",
-  "description": "Offline EPUB accessibility auditor and auto-fixer — audit EPUB Accessibility 1.1 and write a corrected EPUB in one command.",
+  "description": "Offline EPUB accessibility auditor and auto-fixer. Audit EPUB Accessibility 1.1 / WCAG and write a corrected EPUB in one command.",
   "type": "module",
   "module": "src/index.ts",
   "bin": {
-    "epub-a11y": "src/cli.ts"
+    "booklens": "src/cli.ts"
   },
-  "files": ["src", "README.md", "LICENSE", "CHANGELOG.md"],
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "typecheck": "bunx tsc --noEmit",
     "test": "bun test",
@@ -15,7 +20,15 @@
     "audit": "bun run src/cli.ts audit",
     "fix": "bun run src/cli.ts fix"
   },
-  "keywords": ["epub", "accessibility", "a11y", "wcag", "epubcheck", "daisy", "ace"],
+  "keywords": [
+    "epub",
+    "accessibility",
+    "a11y",
+    "wcag",
+    "epubcheck",
+    "daisy",
+    "ace"
+  ],
   "license": "MIT",
   "devDependencies": {
     "@types/bun": "^1.4.2"
