@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>booklens — EPUB accessibility audit and fix</title>
-<meta name="description" content="booklens audits EPUB accessibility against EPUB Accessibility 1.1 and WCAG 2.x, then writes a repaired EPUB. Offline, scriptable, in one command.">
+<meta name="description" content="booklens audits EPUB accessibility against EPUB Accessibility 1.1 and WCAG 2.x, then writes a repaired EPUB. It runs offline and can be scripted.">
 <meta name="theme-color" content="#faf7f2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#14110d" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
@@ -76,53 +76,19 @@
       <span class="aurora-layer aurora-b"></span>
     </div>
     <div class="wrap hero-inner">
-      <p class="eyebrow">Offline EPUB accessibility · audit &amp; repair</p>
       <h1 class="hero-title" id="hero-title">booklens</h1>
-      <p class="lede">Audit an EPUB against EPUB Accessibility 1.1 and WCAG 2.x — then write a repaired book. Offline, scriptable, in one command.</p>
-
-      <ul class="badge-row" aria-label="Highlights">
-        <li><span class="badge">no network</span></li>
-        <li><span class="badge">MIT</span></li>
-        <li><span class="badge">Bun + TypeScript</span></li>
-        <li><span class="badge">14 tests</span></li>
-      </ul>
+      <p class="lede">Audit an EPUB against EPUB Accessibility 1.1 and WCAG 2.x, then write a repaired EPUB. It runs offline and can be scripted.</p>
 
       <div class="install">
         <span class="install-prompt" aria-hidden="true">$</span>
-        <code class="install-code">bun add -d booklens</code>
+        <code class="install-code">curl -fsSL https://raw.githubusercontent.com/srivtx/booklens/main/install.sh | sh</code>
         <button type="button" class="chip-copy" id="install-copy">Copy</button>
       </div>
+      <p class="muted hero-note">booklens is not published to npm. Install it with the one-line script, or run it without installing.</p>
 
       <div class="actions">
         <a class="btn btn-primary shimmer" href="#playground"><span>Try the playground</span></a>
         <a class="btn btn-ghost" href="https://github.com/srivtx/booklens">View on GitHub</a>
-      </div>
-
-      <ul class="trust-row">
-        <li class="trust-item">Offline by design</li>
-        <li class="trust-item">SARIF for code scanning</li>
-        <li class="trust-item">Never throws on a bad book</li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="stat-band" aria-label="booklens at a glance">
-    <div class="wrap stat-grid">
-      <div class="stat">
-        <span class="stat-value">15</span>
-        <span class="stat-label">rules checked</span>
-      </div>
-      <div class="stat">
-        <span class="stat-value">1.1</span>
-        <span class="stat-label">EPUB Accessibility</span>
-      </div>
-      <div class="stat">
-        <span class="stat-value">2.1.0</span>
-        <span class="stat-label">SARIF output</span>
-      </div>
-      <div class="stat">
-        <span class="stat-value">0</span>
-        <span class="stat-label">network calls</span>
       </div>
     </div>
   </section>
@@ -130,30 +96,26 @@
   <section class="section reveal" id="gap" aria-labelledby="gap-title">
     <div class="wrap">
       <div class="section-head">
-        <p class="section-kicker">The gap it fills</p>
-        <h2 class="section-title" id="gap-title">Auditing is solved. Repair is not.</h2>
+        <h2 class="section-title" id="gap-title">Auditing tools do not repair books</h2>
       </div>
       <div class="prose measure">
-        <p>EPUB accessibility tooling splits into two halves that never meet. Auditing is solved: <a href="https://github.com/daisy/ace">DAISY ACE</a> reports on EPUB Accessibility 1.1 and WCAG 2.x, and <a href="https://github.com/w3c/epubcheck">EPUBCheck</a> validates conformance. Both are excellent, maintained, offline tools.</p>
-        <p>Fixing is not. Neither writes a corrected book. The only thing that repairs content is <a href="https://github.com/kevinhendricks/Access-Aide">Access-Aide</a>, a Sigil GUI plugin: it is not scriptable, it cannot run in CI, and it pauses for manual alt-text entry. The one project advertising a one-command fixer has zero stars, no license file, and has never been published to npm.</p>
-        <p>booklens closes that half. It audits a book and emits a repaired EPUB, so accessibility work runs in a pipeline instead of a desktop application.</p>
+        <p>EPUB accessibility tooling splits into two halves that never meet. Auditing is solved: <a href="https://github.com/daisy/ace">DAISY ACE</a> reports on EPUB Accessibility 1.1 and WCAG 2.x, and <a href="https://github.com/w3c/epubcheck">EPUBCheck</a> validates conformance. Both are maintained, offline tools.</p>
+        <p>Fixing is not. Neither writes a corrected book. The only tool that repairs content is <a href="https://github.com/kevinhendricks/Access-Aide">Access-Aide</a>, a Sigil GUI plugin that is not scriptable, cannot run in CI, and pauses for manual alt-text entry. The one project advertising a one-command fixer has no stars, no license file, and has never been published to npm.</p>
+        <p>booklens does that repair step. It audits a book and emits a repaired EPUB, so accessibility work can run in a pipeline instead of a desktop application.</p>
       </div>
 
       <ul class="gap-grid">
         <li class="gap-card">
-          <p class="gap-role">Audits · offline</p>
           <h3 class="gap-name"><a href="https://github.com/daisy/ace">DAISY ACE</a></h3>
-          <p class="gap-desc">Reports on EPUB Accessibility 1.1 and WCAG 2.x. Excellent, maintained — and reporting only.</p>
+          <p class="gap-desc">Reports on EPUB Accessibility 1.1 and WCAG 2.x. It audits but does not repair.</p>
         </li>
         <li class="gap-card">
-          <p class="gap-role">Validates · offline</p>
           <h3 class="gap-name"><a href="https://github.com/w3c/epubcheck">EPUBCheck</a></h3>
-          <p class="gap-desc">Proves EPUB conformance. Says whether a book is valid, not whether it is accessible.</p>
+          <p class="gap-desc">Validates EPUB conformance. It says whether a book is valid, not whether it is accessible.</p>
         </li>
         <li class="gap-card">
-          <p class="gap-role">Fixes · GUI only</p>
           <h3 class="gap-name"><a href="https://github.com/kevinhendricks/Access-Aide">Access-Aide</a></h3>
-          <p class="gap-desc">The one content repairer. A Sigil plugin: not scriptable, not CI, and it stops for manual alt text.</p>
+          <p class="gap-desc">A Sigil plugin that repairs content. It is not scriptable and it stops for manual alt text.</p>
         </li>
       </ul>
     </div>
@@ -162,50 +124,41 @@
   <section class="section reveal" id="features" aria-labelledby="features-title">
     <div class="wrap">
       <div class="section-head">
-        <p class="section-kicker">What it does</p>
-        <h2 class="section-title" id="features-title">A small, sharp tool for one job</h2>
-        <p class="section-sub">Everything is local unzip, XML, and HTML parsing — no service, no telemetry, no surprises.</p>
+        <h2 class="section-title" id="features-title">What booklens does</h2>
+        <p class="section-sub">booklens checks 15 rules against EPUB Accessibility 1.1 and WCAG 2.x. Everything runs locally using unzip, XML, and HTML parsing.</p>
       </div>
       <div class="grid">
         <article class="feature">
-          <p class="feature-glyph" aria-hidden="true">audit → fix</p>
-          <h3>Audit and fix in one pass</h3>
-          <p>Audits a book and emits a repaired EPUB. Audit exits 1 on any error-severity issue, so a pipeline stops on regressions.</p>
+          <h3>Audit and fix</h3>
+          <p>Audits a book and writes a repaired EPUB. Audit exits 1 on any error-severity issue, so a pipeline stops on regressions.</p>
         </article>
         <article class="feature">
-          <p class="feature-glyph" aria-hidden="true">metadata</p>
-          <h3>Metadata repair</h3>
+          <h3>Metadata</h3>
           <p>Adds <code class="code">dc:language</code>, <code class="code">dc:title</code>, and the five <code class="code">schema:*</code> accessibility metas when they are missing.</p>
         </article>
         <article class="feature">
-          <p class="feature-glyph" aria-hidden="true">lang</p>
-          <h3>Language everywhere</h3>
-          <p>Sets <code class="code">lang</code> and <code class="code">xml:lang</code> on every spine document, so assistive technology reads the right language.</p>
+          <h3>Language</h3>
+          <p>Sets <code class="code">lang</code> and <code class="code">xml:lang</code> on every spine document so assistive technology reads the correct language.</p>
         </article>
         <article class="feature">
-          <p class="feature-glyph" aria-hidden="true">alt</p>
-          <h3>Alt placeholders with a changelog</h3>
-          <p>Adds <code class="code">alt=""</code> to images with no <code class="code">alt</code> attribute, and lists every one so a human can fill in real text.</p>
+          <h3>Alt text placeholders</h3>
+          <p>Adds <code class="code">alt=""</code> to images with no <code class="code">alt</code> attribute and lists each one so a human can fill in real text.</p>
         </article>
         <article class="feature">
-          <p class="feature-glyph" aria-hidden="true">nav</p>
-          <h3>Navigation built for you</h3>
+          <h3>Navigation</h3>
           <p>Adds a landmarks nav, builds a page-list when the book has pagebreaks, and generates a navigation document when the book has none.</p>
         </article>
         <article class="feature">
-          <p class="feature-glyph" aria-hidden="true">verify</p>
-          <h3>Fixed and verified</h3>
-          <p>Re-audits the result and returns the remaining issues, so a pipeline can tell “fixed” from “fixed and verified”.</p>
+          <h3>Verification</h3>
+          <p>Re-audits the result and returns the remaining issues, so a pipeline can tell fixed from fixed and verified.</p>
         </article>
         <article class="feature">
-          <p class="feature-glyph" aria-hidden="true">offline</p>
-          <h3>Offline and scriptable</h3>
-          <p>No network code at all. Call it from the CLI or import it as a library.</p>
+          <h3>Offline CLI and library</h3>
+          <p>No network code. Run it from the CLI or import it as a library.</p>
         </article>
         <article class="feature">
-          <p class="feature-glyph" aria-hidden="true">safe</p>
-          <h3>Never throws</h3>
-          <p><code class="code">fixEpub</code> always returns the best archive it could produce, and the writer places <code class="code">mimetype</code> first and uncompressed as the spec requires.</p>
+          <h3>Archive writer</h3>
+          <p><code class="code">fixEpub</code> always returns the best archive it can produce, and the writer places <code class="code">mimetype</code> first and uncompressed as the spec requires.</p>
         </article>
       </div>
     </div>
@@ -214,29 +167,28 @@
   <section class="section reveal" id="how" aria-labelledby="how-title">
     <div class="wrap">
       <div class="section-head">
-        <p class="section-kicker">How it works</p>
-        <h2 class="section-title" id="how-title">Three moves, no ceremony</h2>
+        <h2 class="section-title" id="how-title">How booklens works</h2>
       </div>
       <ol class="steps">
         <li class="step">
           <span class="step-num" aria-hidden="true">01</span>
           <div class="step-body">
             <h3 class="step-title">Audit</h3>
-            <p>Unzip the EPUB and run 15 rules against EPUB Accessibility 1.1 and WCAG 2.x. Human output, JSON, or SARIF.</p>
+            <p>Unzip the EPUB and run 15 rules against EPUB Accessibility 1.1 and WCAG 2.x. Output is human-readable, JSON, or SARIF.</p>
           </div>
         </li>
         <li class="step">
           <span class="step-num" aria-hidden="true">02</span>
           <div class="step-body">
             <h3 class="step-title">Fix</h3>
-            <p>Repair metadata, language, alt placeholders, and navigation. Choose every fix, or pass <code class="code">--only</code> for a subset.</p>
+            <p>Repair metadata, language, alt placeholders, and navigation. Apply every fix, or pass <code class="code">--only</code> for a subset.</p>
           </div>
         </li>
         <li class="step">
           <span class="step-num" aria-hidden="true">03</span>
           <div class="step-body">
             <h3 class="step-title">Verify</h3>
-            <p>Re-audit the repaired archive and return what remains, so a pipeline can fail loudly when judgement is still needed.</p>
+            <p>Re-audit the repaired archive and return what remains, so a pipeline can fail when a human still needs to make a judgement.</p>
           </div>
         </li>
       </ol>
@@ -246,8 +198,7 @@
   <section class="section reveal" id="rules" aria-labelledby="rules-title">
     <div class="wrap">
       <div class="section-head">
-        <p class="section-kicker">The rules</p>
-        <h2 class="section-title" id="rules-title">Fifteen checks, mapped to WCAG</h2>
+        <h2 class="section-title" id="rules-title">Rules booklens checks</h2>
       </div>
 
       <div class="table-wrap">
@@ -291,16 +242,22 @@
   <section class="section reveal" id="install" aria-labelledby="install-title">
     <div class="wrap">
       <div class="section-head">
-        <p class="section-kicker">Install</p>
-        <h2 class="section-title" id="install-title">Add it to a project, or run from source</h2>
+        <h2 class="section-title" id="install-title">Install booklens</h2>
       </div>
       <div class="measure">
-        <pre class="code"><code># add it to a project
-bun add -d booklens
+        <pre class="code"><code># One-line install (installs the `booklens` binary)
+curl -fsSL https://raw.githubusercontent.com/srivtx/booklens/main/install.sh | sh
 
-# or run it from a checkout
-bun install
-bun run src/cli.ts audit book.epub</code></pre>
+# Or run once, without installing
+bunx github:srivtx/booklens audit book.epub
+
+# Install globally
+bun add -g github:srivtx/booklens
+booklens audit book.epub
+
+# Add to a project as a dev dependency
+bun add -d github:srivtx/booklens</code></pre>
+        <p class="muted">booklens is not published to npm. Install it with the one-line script, or run it without installing.</p>
       </div>
     </div>
   </section>
@@ -308,28 +265,27 @@ bun run src/cli.ts audit book.epub</code></pre>
   <section class="section reveal" id="usage" aria-labelledby="usage-title">
     <div class="wrap">
       <div class="section-head">
-        <p class="section-kicker">Usage</p>
         <h2 class="section-title" id="usage-title">CLI and library</h2>
       </div>
 
       <div class="measure">
-        <pre class="code"><code># Audit — human output, exit 1 if there are any errors
-booklens audit book.epub
+        <pre class="code"><code># Audit: human output, exit 1 if there are any errors
+bunx github:srivtx/booklens audit book.epub
 
-# Audit — machine-readable for CI
-booklens audit book.epub --json
+# Audit: machine-readable for CI
+bunx github:srivtx/booklens audit book.epub --json
 
-# Fix — write a corrected EPUB
-booklens fix book.epub -o book.fixed.epub --language en --title "My Book"
+# Fix: write a corrected EPUB
+bunx github:srivtx/booklens fix book.epub -o book.fixed.epub --language en --title "My Book"
 
 # Preview the fixes without writing anything
-booklens fix book.epub --dry-run
+bunx github:srivtx/booklens fix book.epub --dry-run
 
 # Apply only selected fixes
-booklens fix book.epub --only E001,E002,W010
+bunx github:srivtx/booklens fix book.epub --only E001,E002,W010
 
 # Emit SARIF for GitHub code scanning
-booklens audit book.epub --sarif booklens.sarif</code></pre>
+bunx github:srivtx/booklens audit book.epub --sarif booklens.sarif</code></pre>
 
         <p class="muted">Or call it as a library:</p>
 
@@ -351,13 +307,12 @@ if (report.counts.error &gt; 0) {
   <section class="section reveal" id="ci" aria-labelledby="ci-title">
     <div class="wrap">
       <div class="section-head">
-        <p class="section-kicker">Continuous integration</p>
         <h2 class="section-title" id="ci-title">SARIF and GitHub code scanning</h2>
         <p class="section-sub">Audit exits 1 on any error-severity issue. Emit a SARIF 2.1.0 log and let GitHub code scanning annotate the pull request.</p>
       </div>
 
       <div class="measure">
-        <pre class="code"><code>- run: bunx booklens audit public/book.epub --sarif booklens.sarif
+        <pre class="code"><code>- run: bunx github:srivtx/booklens audit public/book.epub --sarif booklens.sarif
 - uses: github/codeql-action/upload-sarif@v3
   with:
     sarif_file: booklens.sarif</code></pre>
@@ -372,16 +327,14 @@ if (report.counts.error &gt; 0) {
   <section class="section reveal" id="limitations" aria-labelledby="limitations-title">
     <div class="wrap">
       <div class="section-head">
-        <p class="section-kicker">Honest scope</p>
-        <h2 class="section-title" id="limitations-title">What it will not do</h2>
+        <h2 class="section-title" id="limitations-title">What booklens does not do</h2>
       </div>
       <div class="callout is-warn measure">
-        <p class="callout-title">Limitations</p>
-        <p>booklens fixes metadata, language, alt placeholders, and navigation. It does not do layout or reading-order repair, and it will not invent alt text. PDF and Office formats are handled by sibling tools, not here.</p>
+        <p>booklens fixes metadata, language, alt placeholders, and navigation. It does not repair layout or reading order, and it does not invent alt text. PDF and Office formats are handled by sibling tools, not here.</p>
         <ul>
-          <li>No reading-order or layout reconstruction.</li>
-          <li>No generated alt text — placeholders are marked for a human.</li>
-          <li>No PDF, DOCX, ODF, or SVG handling.</li>
+          <li>It does not reconstruct reading order or layout.</li>
+          <li>It does not generate alt text; placeholders are marked for a human.</li>
+          <li>It does not handle PDF, DOCX, ODF, or SVG.</li>
         </ul>
       </div>
     </div>
@@ -390,8 +343,7 @@ if (report.counts.error &gt; 0) {
   <section class="section reveal" id="faq" aria-labelledby="faq-title">
     <div class="wrap">
       <div class="section-head">
-        <p class="section-kicker">Questions</p>
-        <h2 class="section-title" id="faq-title">Frequently asked</h2>
+        <h2 class="section-title" id="faq-title">Frequently asked questions</h2>
       </div>
       <div class="faq">
         <details class="faq-item">
@@ -421,7 +373,7 @@ if (report.counts.error &gt; 0) {
         <details class="faq-item">
           <summary class="faq-q">Does it handle other file formats?</summary>
           <div class="faq-a">
-            <p>No — booklens is EPUB only. Office, ODF, SVG, and web-archive formats are covered by its sibling tools, linked in the footer.</p>
+            <p>No. booklens is EPUB only. Office, ODF, SVG, and web-archive formats are covered by its sibling tools, linked in the footer.</p>
           </div>
         </details>
       </div>
@@ -431,7 +383,6 @@ if (report.counts.error &gt; 0) {
   <section class="section reveal" id="playground" aria-labelledby="playground-title">
     <div class="wrap">
       <div class="section-head">
-        <p class="section-kicker">Try it</p>
         <h2 class="section-title" id="playground-title">Audit a book in your browser</h2>
         <p class="section-sub">Drop a real <code class="code">.epub</code> below. It is unzipped and parsed with the same rules as the CLI, entirely in your browser.</p>
       </div>
@@ -460,7 +411,7 @@ if (report.counts.error &gt; 0) {
         </div>
 
         <div class="summary-wrap" id="summary-wrap" style="display: none">
-          <div class="badge-row" id="summary" aria-label="Issue counts"></div>
+          <div class="summary" id="summary" aria-label="Issue counts"></div>
         </div>
 
         <div class="table-wrap" id="issues-wrap" style="display: none">

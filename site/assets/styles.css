@@ -11,17 +11,16 @@
      4. header / nav / brand
      5. buttons / chips / badges
      6. hero (spine + aurora)
-     7. stat band
-     8. gap cards
-     9. feature grid
-    10. steps
-    11. tables
-    12. code
-    13. callouts
-    14. FAQ
-    15. playground
-    16. footer
-    17. utilities / motion / responsive / reduced-motion
+     7. gap cards
+     8. feature grid
+     9. steps
+    10. tables
+    11. code
+    12. callouts
+    13. FAQ
+    14. playground
+    15. footer
+    16. utilities / motion / responsive / reduced-motion
 */
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -241,9 +240,7 @@ samp,
 }
 
 /* Tabular numerals for anything quantitative. */
-.stat-value,
 .rule-table td:first-child,
-.kpi-value,
 .tnum {
   font-variant-numeric: tabular-nums;
 }
@@ -270,16 +267,6 @@ samp,
 .section-head {
   max-width: var(--measure);
   margin-bottom: var(--space-7);
-}
-
-.section-kicker {
-  margin: 0 0 var(--space-3);
-  color: var(--accent);
-  font-family: var(--font-sans);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
 }
 
 .section-title {
@@ -645,15 +632,6 @@ samp,
   }
 }
 
-.badge-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 .badge {
   display: inline-flex;
   align-items: center;
@@ -670,12 +648,6 @@ samp,
   white-space: nowrap;
 }
 
-.badge.is-ok {
-  color: var(--success);
-  border-color: color-mix(in srgb, var(--success) 45%, var(--hairline));
-  background: color-mix(in srgb, var(--success) 10%, transparent);
-}
-
 .badge.is-warn {
   color: var(--warning);
   border-color: color-mix(in srgb, var(--warning) 45%, var(--hairline));
@@ -686,12 +658,6 @@ samp,
   color: var(--error);
   border-color: color-mix(in srgb, var(--error) 45%, var(--hairline));
   background: color-mix(in srgb, var(--error) 10%, transparent);
-}
-
-.badge.is-info {
-  color: var(--info);
-  border-color: color-mix(in srgb, var(--info) 45%, var(--hairline));
-  background: color-mix(in srgb, var(--info) 10%, transparent);
 }
 
 /* Severity chips for the rules table. */
@@ -787,15 +753,6 @@ samp,
   z-index: 2;
 }
 
-.eyebrow {
-  margin: 0 0 var(--space-4);
-  color: var(--accent);
-  font-size: 0.74rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
 .hero-title {
   margin: 0 0 var(--space-4);
   font-size: var(--text-display);
@@ -814,38 +771,17 @@ samp,
   text-wrap: pretty;
 }
 
+.hero-note {
+  margin: 0 0 var(--space-5);
+  font-size: 0.85rem;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
   margin: 0;
-}
-
-.trust-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-5);
-  margin: var(--space-6) 0 0;
-  padding: 0;
-  list-style: none;
-  color: var(--mute);
-  font-size: 0.85rem;
-}
-
-.trust-item {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.trust-item::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  opacity: 0.75;
 }
 
 /* Ambient drifting gradient — two soft radial layers, transform-only. */
@@ -927,50 +863,7 @@ samp,
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   7. STAT BAND
-   ───────────────────────────────────────────────────────────────────────── */
-.stat-band {
-  border-bottom: 1px solid var(--hairline);
-  background: color-mix(in srgb, var(--card) 55%, transparent);
-}
-
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-4);
-  padding-block: var(--space-7);
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-right: var(--space-4);
-  border-right: 1px solid var(--hairline);
-}
-
-.stat:last-child {
-  border-right: 0;
-}
-
-.stat-value {
-  color: var(--ink);
-  font-family: var(--font-serif);
-  font-size: clamp(1.8rem, 3.4vw, 2.5rem);
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-.stat-label {
-  color: var(--mute);
-  font-size: 0.78rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   8. GAP CARDS
+   7. GAP CARDS
    ───────────────────────────────────────────────────────────────────────── */
 .gap-grid {
   display: grid;
@@ -1000,15 +893,6 @@ samp,
   box-shadow: var(--shadow-2);
 }
 
-.gap-role {
-  margin: 0;
-  color: var(--accent);
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
 .gap-name {
   font-size: var(--text-h3);
 }
@@ -1031,7 +915,7 @@ samp,
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   9. FEATURE GRID
+   8. FEATURE GRID
    ───────────────────────────────────────────────────────────────────────── */
 .grid {
   display: grid;
@@ -1059,23 +943,6 @@ samp,
   box-shadow: var(--shadow-2);
 }
 
-.feature-glyph {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  align-self: flex-start;
-  min-width: 42px;
-  height: 26px;
-  padding: 0 10px;
-  border-radius: var(--radius-pill);
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
-
 .feature h3 {
   font-size: var(--text-h3);
 }
@@ -1088,7 +955,7 @@ samp,
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   10. STEPS
+   9. STEPS
    ───────────────────────────────────────────────────────────────────────── */
 .steps {
   display: grid;
@@ -1127,7 +994,7 @@ samp,
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   11. TABLES
+   10. TABLES
    ───────────────────────────────────────────────────────────────────────── */
 .table-wrap {
   width: 100%;
@@ -1196,7 +1063,7 @@ samp,
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   12. CODE
+   11. CODE
    ───────────────────────────────────────────────────────────────────────── */
 .code {
   padding: 2px 7px;
@@ -1260,7 +1127,7 @@ pre.code code {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   13. CALLOUTS
+   12. CALLOUTS
    ───────────────────────────────────────────────────────────────────────── */
 .callout {
   margin: var(--space-6) 0;
@@ -1270,14 +1137,6 @@ pre.code code {
   border-left: 3px solid var(--accent);
   border-radius: var(--radius-2);
   color: var(--body);
-}
-
-.callout-title {
-  margin: 0 0 var(--space-2);
-  color: var(--ink);
-  font-family: var(--font-serif);
-  font-size: 1.05rem;
-  font-weight: 600;
 }
 
 .callout p {
@@ -1316,7 +1175,7 @@ pre.code code {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   14. FAQ
+   13. FAQ
    ───────────────────────────────────────────────────────────────────────── */
 .faq {
   max-width: var(--measure);
@@ -1372,7 +1231,7 @@ pre.code code {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   15. PLAYGROUND
+   14. PLAYGROUND
    ───────────────────────────────────────────────────────────────────────── */
 .playground {
   margin-top: var(--space-6);
@@ -1496,6 +1355,12 @@ pre.code code {
   margin-top: var(--space-5);
 }
 
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .playground .table-wrap {
   margin: var(--space-5) 0 0;
 }
@@ -1505,7 +1370,7 @@ pre.code code {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   16. FOOTER
+   15. FOOTER
    ───────────────────────────────────────────────────────────────────────── */
 .site-footer {
   position: relative;
@@ -1616,7 +1481,7 @@ pre.code code {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   17. UTILITIES / MOTION / RESPONSIVE
+   16. UTILITIES / MOTION / RESPONSIVE
    ───────────────────────────────────────────────────────────────────────── */
 .muted {
   color: var(--mute);
@@ -1645,16 +1510,6 @@ pre.code code {
 .lift:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-2);
-}
-
-@media (max-width: 900px) {
-  .stat-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .stat:nth-child(2n) {
-    border-right: 0;
-  }
 }
 
 @media (max-width: 860px) {
@@ -1718,21 +1573,6 @@ pre.code code {
 @media (max-width: 480px) {
   .wrap {
     padding-inline: var(--space-4);
-  }
-
-  .stat-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .stat {
-    border-right: 0;
-    border-bottom: 1px solid var(--hairline);
-    padding: 0 0 var(--space-3);
-  }
-
-  .stat:last-child {
-    border-bottom: 0;
-    padding-bottom: 0;
   }
 
   .actions .btn {
