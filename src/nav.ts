@@ -3,9 +3,10 @@ import { resolveHref } from "./opf";
 
 const decoder = new TextDecoder("utf-8");
 
-const LANDMARKS_RE = /epub:type="landmarks"|role="doc-landmarks"/;
-const TOC_RE = /epub:type="toc"/;
-const PAGE_LIST_RE = /epub:type="page-list"/;
+const LANDMARKS_RE =
+  /epub:type\s*=\s*["'][^"']*\blandmarks\b[^"']*["']|role\s*=\s*["']doc-landmarks["']/i;
+const TOC_RE = /epub:type\s*=\s*["'][^"']*\btoc\b[^"']*["']/i;
+const PAGE_LIST_RE = /epub:type\s*=\s*["'][^"']*\bpage-list\b[^"']*["']/i;
 
 function hasNavProperty(properties: string): boolean {
   return properties.split(/\s+/).includes("nav");
@@ -41,8 +42,12 @@ export function findNavDoc(store: EpubStore, opf: Opf): NavDoc | undefined {
     }
   }
 
+  const isXhtml =
+    /xhtml|\bhtml\b/i.test(item.mediaType) || /\.x?html?$/i.test(item.href);
+
   return {
     path,
+    isXhtml,
     hasLandmarks: LANDMARKS_RE.test(raw),
     hasToc: TOC_RE.test(raw) || tocContainsFirst,
     hasPageList: PAGE_LIST_RE.test(raw),

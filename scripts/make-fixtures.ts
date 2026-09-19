@@ -202,6 +202,162 @@ export function makeGoodEpub(): Uint8Array {
   ]);
 }
 
+export function makeNoNavEpub(): Uint8Array {
+  const opf = `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="bookid">${IDENTIFIER}</dc:identifier>
+    <dc:title>No Nav</dc:title>
+    <dc:language>en</dc:language>
+  </metadata>
+  <manifest>
+    <item id="cover" href="cover.svg" media-type="image/svg+xml"/>
+    <item id="c1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine>
+    <itemref idref="c1"/>
+  </spine>
+</package>
+`;
+
+  const chapter1 = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <title>Chapter One</title>
+  </head>
+  <body>
+    <h1>Chapter One</h1>
+    <img src="cover.svg" alt="A black square"/>
+  </body>
+</html>
+`;
+
+  return buildEpub([
+    { path: "META-INF/container.xml", data: containerXml(OPF_PATH) },
+    { path: OPF_PATH, data: opf },
+    { path: "OEBPS/chapter1.xhtml", data: chapter1 },
+    { path: "OEBPS/cover.svg", data: COVER_SVG },
+  ]);
+}
+
+export function makeNcxEpub(): Uint8Array {
+  const opf = `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="bookid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="bookid">${IDENTIFIER}</dc:identifier>
+    <dc:title>NCX Book</dc:title>
+    <dc:language>en</dc:language>
+  </metadata>
+  <manifest>
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+    <item id="c1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine toc="ncx">
+    <itemref idref="c1"/>
+  </spine>
+</package>
+`;
+
+  const ncx = `<?xml version="1.0" encoding="UTF-8"?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+  <head>
+    <meta name="dtb:uid" content="${IDENTIFIER}"/>
+  </head>
+  <docTitle><text>NCX Book</text></docTitle>
+  <navMap>
+    <navPoint id="np1" playOrder="1">
+      <navLabel><text>Chapter One</text></navLabel>
+      <content src="chapter1.xhtml"/>
+    </navPoint>
+  </navMap>
+</ncx>
+`;
+
+  const chapter1 = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <title>Chapter One</title>
+  </head>
+  <body>
+    <h1>Chapter One</h1>
+    <p>Body text.</p>
+  </body>
+</html>
+`;
+
+  return buildEpub([
+    { path: "META-INF/container.xml", data: containerXml(OPF_PATH) },
+    { path: OPF_PATH, data: opf },
+    { path: "OEBPS/toc.ncx", data: ncx },
+    { path: "OEBPS/chapter1.xhtml", data: chapter1 },
+  ]);
+}
+
+export function makeSingleQuoteNavEpub(): Uint8Array {
+  const opf = `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="bookid">${IDENTIFIER}</dc:identifier>
+    <dc:title>Single Quotes</dc:title>
+    <dc:language>en</dc:language>
+  </metadata>
+  <manifest>
+    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="cover" href="cover.svg" media-type="image/svg+xml"/>
+    <item id="c1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine>
+    <itemref idref="c1"/>
+  </spine>
+</package>
+`;
+
+  const nav = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en">
+  <head>
+    <title>Contents</title>
+  </head>
+  <body>
+    <nav epub:type='toc' id='toc'>
+      <ol>
+        <li><a href='chapter1.xhtml'>Chapter One</a></li>
+      </ol>
+    </nav>
+    <nav epub:type='landmarks' id='landmarks'>
+      <ol>
+        <li><a epub:type='bodymatter' href='chapter1.xhtml'>Start of Content</a></li>
+      </ol>
+    </nav>
+  </body>
+</html>
+`;
+
+  const chapter1 = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en">
+  <head>
+    <title>Chapter One</title>
+  </head>
+  <body>
+    <h1>Chapter One</h1>
+    <span epub:type="pagebreak" id="p1">1</span>
+    <img src="cover.svg" alt="A black square"/>
+  </body>
+</html>
+`;
+
+  return buildEpub([
+    { path: "META-INF/container.xml", data: containerXml(OPF_PATH) },
+    { path: OPF_PATH, data: opf },
+    { path: "OEBPS/nav.xhtml", data: nav },
+    { path: "OEBPS/chapter1.xhtml", data: chapter1 },
+    { path: "OEBPS/cover.svg", data: COVER_SVG },
+  ]);
+}
+
 if (import.meta.main) {
   const fixturesDir = new URL("../fixtures/", import.meta.url);
   mkdirSync(fixturesDir, { recursive: true });

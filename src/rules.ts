@@ -350,7 +350,7 @@ export function ruleW010(ctx: RuleContext): Issue[] {
       "warning",
       "Navigation document is missing a landmarks nav element.",
       nav.path,
-      true,
+      nav.isXhtml,
       "1.3.1",
     ),
   ];
@@ -364,7 +364,9 @@ export function ruleW011(ctx: RuleContext): Issue[] {
   const message = pagebreaks
     ? "Navigation document is missing a page-list but the publication contains pagebreaks."
     : "Navigation document has no page-list; the publication contains no pagebreaks.";
-  return [mk("W011", severity, message, nav.path, pagebreaks, "1.3.1")];
+  return [
+    mk("W011", severity, message, nav.path, pagebreaks && nav.isXhtml, "1.3.1"),
+  ];
 }
 
 export function ruleW012(ctx: RuleContext): Issue[] {
@@ -457,7 +459,7 @@ export function ruleW014(ctx: RuleContext): Issue[] {
               "warning",
               `Link text is a raw URL: ${display}`,
               doc.path,
-              true,
+              false,
               "2.4.4",
             ),
           );
@@ -490,6 +492,24 @@ export function ruleE015(ctx: RuleContext): Issue[] {
     ),
   ];
 }
+
+export const RULE_CODES = [
+  "E001",
+  "E002",
+  "E003",
+  "E004",
+  "E005",
+  "E006",
+  "W007",
+  "E008",
+  "E009",
+  "W010",
+  "W011",
+  "W012",
+  "W013",
+  "W014",
+  "E015",
+] as const;
 
 export function runRules(ctx: RuleContext): Issue[] {
   const rules = [

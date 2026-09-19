@@ -1,5 +1,6 @@
 import { strToU8, unzipSync, zipSync, type ZipOptions } from "fflate";
 import type { EpubFile, EpubStore } from "./types";
+import { EpubReadError } from "./errors";
 
 const MIMETYPE_PATH = "mimetype";
 const MIMETYPE_VALUE = "application/epub+zip";
@@ -20,7 +21,13 @@ function makeStore(files: EpubFile[]): EpubStore {
 }
 
 export function readEpub(data: Uint8Array): EpubStore {
-  const unzipped = unzipSync(data);
+  let unzipped: Record<string, Uint8Array>;
+  try {
+    unzipped = unzipSync(data);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new EpubReadError(`not a readable EPUB/ZIP archive: ${detail}`);
+  }
   const files: EpubFile[] = [];
 
   for (const path of Object.keys(unzipped)) {

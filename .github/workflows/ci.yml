@@ -27,3 +27,8 @@ jobs:
         run: |
           bun run src/cli.ts fix fixtures/inaccessible.epub -o /tmp/fixed.epub --language en --title Fixed
           bun run src/cli.ts audit /tmp/fixed.epub
+      - name: Site bundle is committed and current
+        run: |
+          bun run build:site
+          git diff --exit-code site/assets/demo.js
+          bun run check:site

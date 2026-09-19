@@ -5,16 +5,7 @@ import { readEpub } from "./zip";
 import { runRules } from "./rules";
 
 export function audit(data: Uint8Array, file = "document.epub"): AuditResult {
-  let store: EpubStore;
-  try {
-    store = readEpub(data);
-  } catch {
-    return {
-      file,
-      issues: [],
-      counts: { error: 0, warning: 0, info: 0 },
-    };
-  }
+  const store: EpubStore = readEpub(data);
 
   let opf: Opf | undefined;
   try {

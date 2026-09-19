@@ -1,4 +1,5 @@
 export * from "./types";
+export * from "./errors";
 export * from "./zip";
 export * from "./opf";
 export * from "./nav";

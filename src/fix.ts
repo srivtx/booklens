@@ -15,6 +15,8 @@ import { audit } from "./audit";
 const encoder = new TextEncoder();
 const decoder = new TextDecoder("utf-8");
 
+const ALT_PLACEHOLDER = "TODO: describe image";
+
 interface DomElement {
   getAttribute(name: string): string | null;
   setAttribute(name: string, value: string): void;
@@ -289,212 +291,219 @@ function collectPagebreaks(
 
 export function fixEpub(data: Uint8Array, options: FixOptions = {}): FixResult {
   const applied: string[] = [];
+  const store = readEpub(data);
+  const files = new Map<string, Uint8Array>();
+  for (const file of store.files) files.set(file.path, file.data);
+
+  const initial = audit(data);
+  const present = new Set(initial.issues.map((issue) => issue.code));
+  const only = options.only;
+  const allowed = (code: string): boolean =>
+    only === undefined || only.includes(code);
+  const should = (code: string): boolean =>
+    present.has(code) && allowed(code);
+
+  let opf: Opf | undefined;
   try {
-    const store = readEpub(data);
-    const files = new Map<string, Uint8Array>();
-    for (const file of store.files) files.set(file.path, file.data);
+    opf = parseOpf(store);
+  } catch {
+    opf = undefined;
+  }
 
-    const initial = audit(data);
-    const present = new Set(initial.issues.map((issue) => issue.code));
-    const only = options.only;
-    const allowed = (code: string): boolean =>
-      only === undefined || only.includes(code);
-    const should = (code: string): boolean =>
-      present.has(code) && allowed(code);
+  const language = options.language ?? opf?.metadata.language ?? "en";
+  const title = options.title ?? opf?.metadata.title ?? "Untitled";
 
-    let opf: Opf | undefined;
-    try {
-      opf = parseOpf(store);
-    } catch {
-      opf = undefined;
+  if (opf) {
+    let opfRaw = opf.raw;
+    let opfDirty = false;
+
+    if (should("E001")) {
+      opfRaw = setDcElement(opfRaw, "dc:language", language);
+      opfDirty = true;
+      applied.push(`E001: set dc:language to ${language}`);
+    }
+    if (should("E002")) {
+      opfRaw = setDcElement(opfRaw, "dc:title", title);
+      opfDirty = true;
+      applied.push(`E002: set dc:title to ${title}`);
     }
 
-    const language = options.language ?? opf?.metadata.language ?? "en";
-    const title = options.title ?? opf?.metadata.title ?? "Untitled";
+    const metaFixes: [string, string, string][] = [
+      ["E003", "schema:accessMode", "textual"],
+      ["E004", "schema:accessModeSufficient", "textual"],
+      ["E005", "schema:accessibilityFeature", "structuralNavigation"],
+      ["E006", "schema:accessibilityHazard", "none"],
+      [
+        "W007",
+        "schema:accessibilitySummary",
+        "This publication contains accessible text, structural navigation, and text alternatives for images.",
+      ],
+    ];
+    for (const [code, property, value] of metaFixes) {
+      if (!should(code)) continue;
+      if (hasMetaProperty(opfRaw, property)) continue;
+      opfRaw = addMetaProperty(opfRaw, property, value);
+      opfDirty = true;
+      applied.push(`${code}: added meta property ${property}`);
+    }
 
-    if (opf) {
-      let opfRaw = opf.raw;
-      let opfDirty = false;
+    const docPaths = spineDocPaths(opf);
 
-      if (should("E001")) {
-        opfRaw = setDcElement(opfRaw, "dc:language", language);
-        opfDirty = true;
-        applied.push(`E001: set dc:language to ${language}`);
-      }
-      if (should("E002")) {
-        opfRaw = setDcElement(opfRaw, "dc:title", title);
-        opfDirty = true;
-        applied.push(`E002: set dc:title to ${title}`);
-      }
-
-      const metaFixes: [string, string, string][] = [
-        ["E003", "schema:accessMode", "textual"],
-        ["E004", "schema:accessModeSufficient", "textual"],
-        ["E005", "schema:accessibilityFeature", "structuralNavigation"],
-        ["E006", "schema:accessibilityHazard", "none"],
-        [
-          "W007",
-          "schema:accessibilitySummary",
-          "This publication contains accessible text, structural navigation, and text alternatives for images.",
-        ],
-      ];
-      for (const [code, property, value] of metaFixes) {
-        if (!should(code)) continue;
-        if (hasMetaProperty(opfRaw, property)) continue;
-        opfRaw = addMetaProperty(opfRaw, property, value);
-        opfDirty = true;
-        applied.push(`${code}: added meta property ${property}`);
-      }
-
-      const docPaths = spineDocPaths(opf);
-
-      if (docPaths.length > 0 && (should("E008") || should("E009"))) {
-        let imageCount = 0;
-        let langCount = 0;
-        for (const path of docPaths) {
-          const bytes = files.get(path);
-          if (!bytes) continue;
-          const doc = parseDoc(toStr(bytes));
-          if (!doc) continue;
-          let changed = false;
-          if (should("E009")) {
-            const root = doc.documentElement;
-            if (root) {
-              root.setAttribute("lang", language);
-              root.setAttribute("xml:lang", language);
+    if (docPaths.length > 0 && (should("E008") || should("E009"))) {
+      let langCount = 0;
+      for (const path of docPaths) {
+        const bytes = files.get(path);
+        if (!bytes) continue;
+        const doc = parseDoc(toStr(bytes));
+        if (!doc) continue;
+        let changed = false;
+        if (should("E009")) {
+          const root = doc.documentElement;
+          if (root) {
+            root.setAttribute("lang", language);
+            root.setAttribute("xml:lang", language);
+            changed = true;
+            langCount += 1;
+          }
+        }
+        if (should("E008")) {
+          let images: DomElement[] = [];
+          try {
+            images = Array.from(doc.querySelectorAll("img"));
+          } catch {
+            images = [];
+          }
+          for (const image of images) {
+            if (image.getAttribute("alt") === null) {
+              image.setAttribute("alt", ALT_PLACEHOLDER);
+              const src = image.getAttribute("src") ?? "(no src)";
+              applied.push(
+                `E008: set alt="${ALT_PLACEHOLDER}" on ${path} (img src="${src}")`,
+              );
               changed = true;
-              langCount += 1;
             }
           }
-          if (should("E008")) {
-            let images: DomElement[] = [];
-            try {
-              images = Array.from(doc.querySelectorAll("img"));
-            } catch {
-              images = [];
-            }
-            for (const image of images) {
-              if (image.getAttribute("alt") === null) {
-                image.setAttribute("alt", "");
-                imageCount += 1;
-                changed = true;
-              }
-            }
-          }
-          if (changed) files.set(path, toBytes(doc.toString()));
         }
-        if (langCount > 0) {
-          applied.push(
-            `E009: set lang and xml:lang to ${language} on ${langCount} document(s)`,
-          );
-        }
-        if (imageCount > 0) {
-          applied.push(`E008: added alt="" to ${imageCount} image(s)`);
-        }
+        if (changed) files.set(path, toBytes(doc.toString()));
       }
-
-      let nav = undefined as ReturnType<typeof findNavDoc>;
-      try {
-        nav = findNavDoc(store, opf);
-      } catch {
-        nav = undefined;
+      if (langCount > 0) {
+        applied.push(
+          `E009: set lang and xml:lang to ${language} on ${langCount} document(s)`,
+        );
       }
+    }
 
-      if (nav && nav.path.length > 0) {
-        let navRaw = toStr(files.get(nav.path)) || nav.raw;
-        const navDir = dirname(nav.path);
-        const firstPath = firstSpinePath(opf);
-        const firstHref = firstPath ? relativePath(navDir, firstPath) : undefined;
+    let nav = undefined as ReturnType<typeof findNavDoc>;
+    try {
+      nav = findNavDoc(store, opf);
+    } catch {
+      nav = undefined;
+    }
 
-        if (should("W010") && !/epub:type\s*=\s*["'][^"']*landmarks/i.test(navRaw)) {
-          const tocId = findNavId(navRaw, "toc");
-          const tocHref = tocId ? `#${tocId}` : basename(nav.path);
-          const items: string[] = [];
-          if (firstHref) {
-            items.push(
-              `      <li><a epub:type="bodymatter" href="${esc(firstHref)}">Start of Content</a></li>`,
-            );
-          }
+    if (nav && nav.path.length > 0 && !nav.isXhtml) {
+      if (should("W010")) {
+        applied.push(
+          `W010: skipped (navigation document ${nav.path} is NCX, not XHTML)`,
+        );
+      }
+      if (should("W011")) {
+        applied.push(
+          `W011: skipped (navigation document ${nav.path} is NCX, not XHTML)`,
+        );
+      }
+    } else if (nav && nav.path.length > 0) {
+      let navRaw = toStr(files.get(nav.path)) || nav.raw;
+      const navDir = dirname(nav.path);
+      const firstPath = firstSpinePath(opf);
+      const firstHref = firstPath ? relativePath(navDir, firstPath) : undefined;
+
+      if (should("W010") && !/epub:type\s*=\s*["'][^"']*landmarks/i.test(navRaw)) {
+        const tocId = findNavId(navRaw, "toc");
+        const tocHref = tocId ? `#${tocId}` : basename(nav.path);
+        const items: string[] = [];
+        if (firstHref) {
           items.push(
-            `      <li><a epub:type="toc" href="${esc(tocHref)}">Table of Contents</a></li>`,
+            `      <li><a epub:type="bodymatter" href="${esc(firstHref)}">Start of Content</a></li>`,
           );
-          const snippet = `    <nav epub:type="landmarks" hidden="">\n      <ol>\n${items.join("\n")}\n      </ol>\n    </nav>`;
+        }
+        items.push(
+          `      <li><a epub:type="toc" href="${esc(tocHref)}">Table of Contents</a></li>`,
+        );
+        const snippet = `    <nav epub:type="landmarks" hidden="">\n      <ol>\n${items.join("\n")}\n      </ol>\n    </nav>`;
+        navRaw = insertBeforeBodyClose(navRaw, snippet);
+        files.set(nav.path, toBytes(navRaw));
+        applied.push("W010: added landmarks nav");
+      }
+
+      if (should("W011") && !/epub:type\s*=\s*["'][^"']*page-list/i.test(navRaw)) {
+        const pagebreaks = collectPagebreaks(
+          docPaths,
+          navDir,
+          files,
+        );
+        if (pagebreaks.length > 0) {
+          const items = pagebreaks
+            .map(
+              (entry) =>
+                `      <li><a href="${esc(entry.href)}">${esc(entry.text)}</a></li>`,
+            )
+            .join("\n");
+          const snippet = `    <nav epub:type="page-list" hidden="">\n      <ol>\n${items}\n      </ol>\n    </nav>`;
           navRaw = insertBeforeBodyClose(navRaw, snippet);
           files.set(nav.path, toBytes(navRaw));
-          applied.push("W010: added landmarks nav");
-        }
-
-        if (should("W011") && !/epub:type\s*=\s*["'][^"']*page-list/i.test(navRaw)) {
-          const pagebreaks = collectPagebreaks(
-            docPaths,
-            navDir,
-            files,
-          );
-          if (pagebreaks.length > 0) {
-            const items = pagebreaks
-              .map(
-                (entry) =>
-                  `      <li><a href="${esc(entry.href)}">${esc(entry.text)}</a></li>`,
-              )
-              .join("\n");
-            const snippet = `    <nav epub:type="page-list" hidden="">\n      <ol>\n${items}\n      </ol>\n    </nav>`;
-            navRaw = insertBeforeBodyClose(navRaw, snippet);
-            files.set(nav.path, toBytes(navRaw));
-            applied.push(`W011: added page-list nav with ${pagebreaks.length} entries`);
-          }
+          applied.push(`W011: added page-list nav with ${pagebreaks.length} entries`);
         }
       }
+    }
 
-      if (should("E015") && !nav) {
-        const navPath = opf.dir.length > 0 ? `${opf.dir}/nav.xhtml` : "nav.xhtml";
-        const navDir = opf.dir;
-        const navDoc = buildNavDocument(navDir, docPaths, files, language);
-        files.set(navPath, toBytes(navDoc));
+    if (should("E015") && !nav) {
+      const navPath = opf.dir.length > 0 ? `${opf.dir}/nav.xhtml` : "nav.xhtml";
+      const navDir = opf.dir;
+      const navDoc = buildNavDocument(navDir, docPaths, files, language);
+      files.set(navPath, toBytes(navDoc));
 
-        const navId = uniqueNavId(opf);
-        const navHref = relativePath(opf.dir, navPath);
-        if (/<\/manifest\s*>/i.test(opfRaw)) {
-          opfRaw = opfRaw.replace(
-            /<\/manifest\s*>/i,
-            () =>
-              `  <item id="${esc(navId)}" href="${esc(navHref)}" media-type="application/xhtml+xml" properties="nav"/>\n</manifest>`,
-          );
-        } else if (/<manifest\s*\/>/i.test(opfRaw)) {
-          opfRaw = opfRaw.replace(
-            /<manifest\s*\/>/i,
-            () =>
-              `<manifest>\n  <item id="${esc(navId)}" href="${esc(navHref)}" media-type="application/xhtml+xml" properties="nav"/>\n</manifest>`,
-          );
-        } else {
-          opfRaw = `${opfRaw}\n<manifest><item id="${esc(navId)}" href="${esc(navHref)}" media-type="application/xhtml+xml" properties="nav"/></manifest>`;
-        }
-        opfDirty = true;
-        applied.push(`E015: created ${navPath} and registered it in the manifest`);
+      const navId = uniqueNavId(opf);
+      const navHref = relativePath(opf.dir, navPath);
+      if (/<\/manifest\s*>/i.test(opfRaw)) {
+        opfRaw = opfRaw.replace(
+          /<\/manifest\s*>/i,
+          () =>
+            `  <item id="${esc(navId)}" href="${esc(navHref)}" media-type="application/xhtml+xml" properties="nav"/>\n</manifest>`,
+        );
+      } else if (/<manifest\s*\/>/i.test(opfRaw)) {
+        opfRaw = opfRaw.replace(
+          /<manifest\s*\/>/i,
+          () =>
+            `<manifest>\n  <item id="${esc(navId)}" href="${esc(navHref)}" media-type="application/xhtml+xml" properties="nav"/>\n</manifest>`,
+        );
+      } else {
+        opfRaw = `${opfRaw}\n<manifest><item id="${esc(navId)}" href="${esc(navHref)}" media-type="application/xhtml+xml" properties="nav"/></manifest>`;
       }
-
-      if (opfDirty) files.set(opf.path, toBytes(opfRaw));
+      opfDirty = true;
+      applied.push(`E015: created ${navPath} and registered it in the manifest`);
     }
 
-    const outFiles: EpubFile[] = [];
-    for (const file of store.files) {
-      const data2 = files.get(file.path);
-      outFiles.push({ path: file.path, data: data2 ?? file.data });
-    }
-    const outStore: EpubStore = {
-      files: outFiles,
-      list: () => outFiles.map((file) => file.path).sort(),
-      get: (path: string) => files.get(path),
-    };
-
-    const outData = writeEpub(outStore);
-    let remaining: Issue[] = [];
-    try {
-      remaining = audit(outData).issues;
-    } catch {
-      remaining = [];
-    }
-    return { data: outData, applied, remaining };
-  } catch {
-    return { data, applied, remaining: [] };
+    if (opfDirty) files.set(opf.path, toBytes(opfRaw));
   }
+
+  const outFiles: EpubFile[] = [];
+  const written = new Set<string>();
+  for (const file of store.files) {
+    written.add(file.path);
+    const data2 = files.get(file.path);
+    outFiles.push({ path: file.path, data: data2 ?? file.data });
+  }
+  for (const [path, data2] of files) {
+    if (written.has(path)) continue;
+    outFiles.push({ path, data: data2 });
+  }
+  const outStore: EpubStore = {
+    files: outFiles,
+    list: () => outFiles.map((file) => file.path).sort(),
+    get: (path: string) => files.get(path),
+  };
+
+  const outData = writeEpub(outStore);
+  const remaining = audit(outData).issues;
+  return { data: outData, applied, remaining };
 }

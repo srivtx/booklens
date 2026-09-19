@@ -189,11 +189,17 @@ export function parseOpf(store: EpubStore): Opf | undefined {
 }
 
 export function resolveHref(dir: string, href: string): string {
-  let decoded = href;
+  let target = href;
+  const hash = target.indexOf("#");
+  if (hash !== -1) target = target.slice(0, hash);
+  const query = target.indexOf("?");
+  if (query !== -1) target = target.slice(0, query);
+
+  let decoded = target;
   try {
-    decoded = decodeURIComponent(href);
+    decoded = decodeURIComponent(target);
   } catch {
-    decoded = href;
+    decoded = target;
   }
 
   const base = dir.replace(/\/+$/, "");

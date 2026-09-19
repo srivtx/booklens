@@ -1,0 +1,15 @@
+/* booklens — per-tool accent for the Lens suite.
+   Only the accent changes here; everything else comes from lens.css. */
+:root {
+  --accent: #0f766e;
+  --accent-ink: #ffffff;
+}
+
+/* Page-specific tweak: keep the SARIF/fix action row off the results table. */
+.playground__results .btn-row {
+  margin-top: var(--s-4);
+}
+
+/* The favicon (a lens glyph tinted with the accent) is declared in the
+   document head as a data-URI <link rel="icon">, so there is no asset to
+   fetch and the page keeps its no-network promise. */

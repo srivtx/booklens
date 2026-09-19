@@ -50,6 +50,7 @@ export interface Opf {
 
 export interface NavDoc {
   path: string;
+  isXhtml: boolean;
   hasLandmarks: boolean;
   hasToc: boolean;
   hasPageList: boolean;

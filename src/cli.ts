@@ -2,18 +2,49 @@
 import { audit } from "./audit";
 import { fixEpub } from "./fix";
 import { writeSarif } from "./sarif";
-import type { Issue, Severity } from "./types";
+import { RULE_CODES } from "./rules";
+import { EpubReadError } from "./errors";
+import type { AuditResult, FixResult, Issue, Severity } from "./types";
 import pkg from "../package.json" with { type: "json" };
 
 const VERSION = pkg.version;
 
-const USAGE = `Usage:
-  audit <file> [--json] [--sarif <path>] [--fail-on <error|warning|info|none>]
-  fix <file> -o <out> [--language <lang>] [--title <title>] [--only CODES] [--dry-run] [--sarif <path>] [--fail-on <error|warning|info|none>]
+const USAGE = `booklens ${VERSION}
 
-Global:
-  --version            Print the version and exit
-  --help, -h           Print this usage and exit`;
+Usage:
+  booklens audit <file> [options]
+  booklens fix <file> [options]
+
+Commands:
+  audit <file>        Report accessibility issues in an EPUB.
+  fix <file>          Write a repaired EPUB (default: <input>.fixed.epub).
+
+Options:
+  -o <path>           fix: output path (default: <input>.fixed.epub)
+  --json              audit: print the full result as JSON
+  --sarif <path>      Write a SARIF 2.1.0 report to <path>
+  --fail-on <level>   Exit 1 at or above this severity: error (default),
+                      warning, info, or none
+  --language <lang>   fix: language to write when one is missing (default: en)
+  --title <title>     fix: title to write when one is missing
+  --only <codes>      fix: comma-separated rule codes to apply
+                      (e.g. --only E001,E002,W010)
+  --dry-run           fix: report changes without writing a file
+  -v, --version       Print the version and exit
+  -h, --help          Print this help and exit
+
+Exit codes:
+  0  success; no findings at or above --fail-on
+  1  findings at or above --fail-on, or invalid arguments
+  2  the input could not be read or is not a valid EPUB
+
+Examples:
+  booklens audit book.epub
+  booklens audit book.epub --json --sarif booklens.sarif
+  booklens fix book.epub -o book.fixed.epub --language en --title "My Book"
+  booklens fix book.epub --only E001,E002 --dry-run`;
+
+const KNOWN_CODES = new Set<string>(RULE_CODES as readonly string[]);
 
 interface ParsedArgs {
   positional: string[];
@@ -74,13 +105,53 @@ function defaultOutputPath(input: string): string {
   return input.replace(/\.epub$/i, "") + ".fixed.epub";
 }
 
-function parseOnly(value: string | boolean | undefined): string[] | undefined {
-  if (typeof value !== "string") return undefined;
+interface ParsedOnly {
+  codes?: string[];
+  error?: string;
+}
+
+function parseOnly(value: string | boolean | undefined): ParsedOnly {
+  if (value === undefined) return {};
+  if (typeof value !== "string" || value.trim() === "") {
+    return { error: "--only requires at least one rule code (e.g. --only E001,E002)." };
+  }
   const codes = value
     .split(/[,\s]+/)
-    .map((code: string) => code.trim())
+    .map((code: string) => code.trim().toUpperCase())
     .filter((code: string) => code.length > 0);
-  return codes.length > 0 ? codes : undefined;
+  if (codes.length === 0) {
+    return { error: "--only requires at least one rule code (e.g. --only E001,E002)." };
+  }
+  const unknown = codes.filter((code) => !KNOWN_CODES.has(code));
+  if (unknown.length > 0) {
+    return {
+      error: `Unknown rule code(s): ${unknown.join(", ")}. Known codes: ${[...KNOWN_CODES].join(", ")}.`,
+    };
+  }
+  return { codes };
+}
+
+function validateSingleInput(positional: string[]): string | undefined {
+  if (positional.length === 0) {
+    console.error(USAGE);
+    return undefined;
+  }
+  if (positional.length > 1) {
+    console.error(
+      `Unexpected extra argument(s): ${positional.slice(1).join(", ")}. Provide exactly one input file.`,
+    );
+    return undefined;
+  }
+  return positional[0];
+}
+
+function sarifError(flags: Map<string, string | boolean>): string | undefined {
+  if (!flags.has("sarif")) return undefined;
+  const value = flags.get("sarif");
+  if (typeof value !== "string" || value.trim() === "") {
+    return "--sarif requires a non-empty output path.";
+  }
+  return undefined;
 }
 
 function countsOf(issues: Issue[]): Record<Severity, number> {
@@ -123,8 +194,12 @@ async function sarifPath(
   return value;
 }
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 function wantsVersion(flags: Map<string, string | boolean>): boolean {
-  return flags.get("version") === true;
+  return flags.get("version") === true || flags.get("v") === true;
 }
 
 function wantsHelp(flags: Map<string, string | boolean>): boolean {
@@ -149,14 +224,33 @@ async function runAudit(args: string[]): Promise<number> {
     return 1;
   }
 
-  const file = positional[0];
-  if (!file) {
-    console.error(USAGE);
+  const sarifIssue = sarifError(flags);
+  if (sarifIssue !== undefined) {
+    console.error(sarifIssue);
     return 1;
   }
 
-  const data = await readBytes(file);
-  const result = audit(data, file);
+  const file = validateSingleInput(positional);
+  if (file === undefined) return 1;
+
+  let data: Uint8Array;
+  try {
+    data = await readBytes(file);
+  } catch (error) {
+    console.error(`Cannot read ${file}: ${errorMessage(error)}`);
+    return 2;
+  }
+
+  let result: AuditResult;
+  try {
+    result = audit(data, file);
+  } catch (error) {
+    if (error instanceof EpubReadError) {
+      console.error(`Cannot parse ${file}: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  }
 
   if (flags.get("json") === true) {
     console.log(JSON.stringify(result, null, 2));
@@ -194,22 +288,46 @@ async function runFix(args: string[]): Promise<number> {
     return 1;
   }
 
-  const file = positional[0];
-  if (!file) {
-    console.error(USAGE);
+  const sarifIssue = sarifError(flags);
+  if (sarifIssue !== undefined) {
+    console.error(sarifIssue);
     return 1;
   }
 
-  const data = await readBytes(file);
+  const only = parseOnly(flags.get("only"));
+  if (only.error !== undefined) {
+    console.error(only.error);
+    return 1;
+  }
+
+  const file = validateSingleInput(positional);
+  if (file === undefined) return 1;
+
+  let data: Uint8Array;
+  try {
+    data = await readBytes(file);
+  } catch (error) {
+    console.error(`Cannot read ${file}: ${errorMessage(error)}`);
+    return 2;
+  }
+
   const language = flags.get("language");
   const title = flags.get("title");
-  const only = parseOnly(flags.get("only"));
 
-  const result = fixEpub(data, {
-    ...(typeof language === "string" ? { language } : {}),
-    ...(typeof title === "string" ? { title } : {}),
-    ...(only ? { only } : {}),
-  });
+  let result: FixResult;
+  try {
+    result = fixEpub(data, {
+      ...(typeof language === "string" ? { language } : {}),
+      ...(typeof title === "string" ? { title } : {}),
+      ...(only.codes ? { only: only.codes } : {}),
+    });
+  } catch (error) {
+    if (error instanceof EpubReadError) {
+      console.error(`Cannot parse ${file}: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  }
 
   for (const entry of result.applied) console.log(entry);
   console.log(`remaining: ${result.remaining.length}`);
