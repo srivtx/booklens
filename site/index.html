@@ -5,12 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>booklens — EPUB accessibility audit and fix</title>
 <meta name="description" content="booklens audits an EPUB against EPUB Accessibility 1.1 and WCAG 2.x and writes a repaired EPUB back. It runs offline, emits SARIF 2.1.0, and can be scripted in CI.">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
 <meta property="og:title" content="booklens — EPUB accessibility audit and fix">
 <meta property="og:description" content="Offline EPUB accessibility audit and repair: fifteen rules, a repaired book back, and SARIF 2.1.0 for GitHub code scanning.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://booklens-srivtx.vercel.app">
+<meta property="og:image" content="https://booklens-srivtx.vercel.app/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="booklens — EPUB accessibility audit and fix">
+<meta name="twitter:description" content="Offline EPUB accessibility audit and repair: fifteen rules, a repaired book back, and SARIF 2.1.0 for GitHub code scanning.">
 <link rel="canonical" href="https://booklens-srivtx.vercel.app">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f766e'/%3E%3Ccircle cx='14' cy='14' r='6.4' fill='none' stroke='white' stroke-width='2.4'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/lens.css">
@@ -544,7 +551,7 @@ if (report.counts.error &gt; 0) {
     </div>
 
     <div class="footer__meta">
-      <p>The Lens suite &mdash; offline document accessibility tools, plus waxseal for archive integrity.</p>
+      <p>MIT licensed. The Lens suite — offline document accessibility tools, plus waxseal for archive integrity.</p>
       <a href="#top">Back to top</a>
     </div>
   </div>
@@ -766,7 +773,7 @@ if (report.counts.error &gt; 0) {
 
   function downloadSarif() {
     if (!state.result) return;
-    var sarif = BookLens.toSarif(state.result, "booklens", "0.1.0");
+    var sarif = BookLens.toSarif(state.result, "booklens", "0.2.0");
     downloadBlob(
       JSON.stringify(sarif, null, 2),
       "booklens.sarif",

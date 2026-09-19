@@ -11,7 +11,7 @@
 [![license](https://img.shields.io/badge/license-MIT-0f766e)](LICENSE)
 [![runtime](https://img.shields.io/badge/runtime-Bun-14151A?logo=bun&logoColor=white)](https://bun.sh)
 [![types](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
-[![tests](https://img.shields.io/badge/tests-33-0f766e)](#testing)
+[![tests](https://img.shields.io/badge/tests-36-0f766e)](#testing)
 [![network](https://img.shields.io/badge/network-none-0f766e)](#privacy)
 
 </div>
@@ -215,7 +215,7 @@ describes the issues remaining after the fix.
 
 | Gate | Result |
 |---|---|
-| `bun test` | 33 tests |
+| `bun test` | 36 tests |
 | `bunx tsc --noEmit` | clean (strict) |
 | fixtures | `bun run make-fixtures` writes a broken and a clean EPUB |
 | round trip | `fix` → `audit` ends with zero errors |

@@ -6,6 +6,7 @@ import type {
   OpfMetadata,
   SpineItem,
 } from "./types";
+import { EpubReadError } from "./errors";
 
 const decoder = new TextDecoder("utf-8");
 
@@ -186,6 +187,33 @@ export function parseOpf(store: EpubStore): Opf | undefined {
     spine,
     raw,
   };
+}
+
+// A valid ZIP is not necessarily an EPUB: without a container and a package
+// document there is nothing to read. Callers use this to distinguish "could
+// not be read / parsed" from an ordinary accessibility finding.
+export function assertReadableEpub(store: EpubStore): Opf {
+  if (!store.get("META-INF/container.xml")) {
+    throw new EpubReadError(
+      "not a readable EPUB: missing META-INF/container.xml",
+    );
+  }
+
+  const path = findOpfPath(store);
+  if (!path) {
+    throw new EpubReadError(
+      "not a readable EPUB: META-INF/container.xml does not reference a package document (OPF)",
+    );
+  }
+
+  const opf = parseOpf(store);
+  if (!opf) {
+    throw new EpubReadError(
+      `not a readable EPUB: cannot parse package document ${path}`,
+    );
+  }
+
+  return opf;
 }
 
 export function resolveHref(dir: string, href: string): string {

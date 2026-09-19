@@ -295,6 +295,65 @@ export function makeNcxEpub(): Uint8Array {
   ]);
 }
 
+// EPUB2/NCX book whose spine document uses HTML-style void elements
+// (`<br>`, `<img>`) and an image without alt. Fixing E008/E009 rewrites this
+// document, so it is the regression case for XML-safe serialization.
+export function makeXmlUnsafeNcxEpub(): Uint8Array {
+  const opf = `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="bookid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="bookid">${IDENTIFIER}</dc:identifier>
+    <dc:title>Void Tag Book</dc:title>
+    <dc:language>en</dc:language>
+  </metadata>
+  <manifest>
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+    <item id="c1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine toc="ncx">
+    <itemref idref="c1"/>
+  </spine>
+</package>
+`;
+
+  const ncx = `<?xml version="1.0" encoding="UTF-8"?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+  <head>
+    <meta name="dtb:uid" content="${IDENTIFIER}"/>
+  </head>
+  <docTitle><text>Void Tag Book</text></docTitle>
+  <navMap>
+    <navPoint id="np1" playOrder="1">
+      <navLabel><text>Chapter One</text></navLabel>
+      <content src="chapter1.xhtml"/>
+    </navPoint>
+  </navMap>
+</ncx>
+`;
+
+  const chapter1 = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+  <head>
+    <title>Chapter One</title>
+  </head>
+  <body>
+    <h1>Chapter One</h1>
+    <p>Line one<br>Line two &#160; end</p>
+    <img src="cover.svg">
+  </body>
+</html>
+`;
+
+  return buildEpub([
+    { path: "META-INF/container.xml", data: containerXml(OPF_PATH) },
+    { path: OPF_PATH, data: opf },
+    { path: "OEBPS/toc.ncx", data: ncx },
+    { path: "OEBPS/chapter1.xhtml", data: chapter1 },
+    { path: "OEBPS/cover.svg", data: COVER_SVG },
+  ]);
+}
+
 export function makeSingleQuoteNavEpub(): Uint8Array {
   const opf = `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid">

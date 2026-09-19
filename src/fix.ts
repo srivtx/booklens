@@ -65,6 +65,243 @@ function esc(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
+const VOID_ELEMENTS = new Set([
+  "area",
+  "base",
+  "br",
+  "col",
+  "embed",
+  "hr",
+  "img",
+  "input",
+  "link",
+  "meta",
+  "param",
+  "source",
+  "track",
+  "wbr",
+]);
+
+interface XmlAttribute {
+  name: string;
+  value: string | null;
+}
+
+interface XmlStartTag {
+  name: string;
+  insertPos: number;
+  selfClosing: boolean;
+  attributes: XmlAttribute[];
+}
+
+function isNameStart(ch: string): boolean {
+  return /[A-Za-z_:]/.test(ch);
+}
+
+function isNameChar(ch: string): boolean {
+  return /[-A-Za-z0-9_:.]/.test(ch);
+}
+
+function scanTagEnd(raw: string, from: number): number {
+  let quote: string | null = null;
+  for (let i = from; i < raw.length; i += 1) {
+    const ch = raw[i];
+    if (ch === undefined) break;
+    if (quote !== null) {
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      continue;
+    }
+    if (ch === ">") return i;
+  }
+  return -1;
+}
+
+function scanDeclarationEnd(raw: string, from: number): number {
+  let quote: string | null = null;
+  let depth = 0;
+  for (let i = from; i < raw.length; i += 1) {
+    const ch = raw[i];
+    if (ch === undefined) break;
+    if (quote !== null) {
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      continue;
+    }
+    if (ch === "[") {
+      depth += 1;
+      continue;
+    }
+    if (ch === "]") {
+      if (depth > 0) depth -= 1;
+      continue;
+    }
+    if (ch === ">" && depth === 0) return i;
+  }
+  return -1;
+}
+
+function parseAttributes(raw: string, from: number, to: number): XmlAttribute[] {
+  const attrs: XmlAttribute[] = [];
+  let i = from;
+  while (i < to) {
+    while (i < to && /\s/.test(raw[i] ?? "")) i += 1;
+    if (i >= to) break;
+    if (raw[i] === "/") {
+      i += 1;
+      continue;
+    }
+    const nameStart = i;
+    while (i < to && !/[\s=/]/.test(raw[i] ?? "")) i += 1;
+    const name = raw.slice(nameStart, i);
+    if (name.length === 0) {
+      i += 1;
+      continue;
+    }
+    while (i < to && /\s/.test(raw[i] ?? "")) i += 1;
+    let value: string | null = null;
+    if (raw[i] === "=") {
+      i += 1;
+      while (i < to && /\s/.test(raw[i] ?? "")) i += 1;
+      const quote = raw[i];
+      if (quote === '"' || quote === "'") {
+        const valueStart = i + 1;
+        i += 1;
+        while (i < to && raw[i] !== quote) i += 1;
+        value = raw.slice(valueStart, i);
+        if (i < to) i += 1;
+      } else {
+        const valueStart = i;
+        while (i < to && !/\s/.test(raw[i] ?? "")) i += 1;
+        value = raw.slice(valueStart, i);
+      }
+    }
+    attrs.push({ name, value });
+  }
+  return attrs;
+}
+
+// Scan only element start tags, skipping comments, CDATA, processing
+// instructions and declarations so that markup-looking text is never edited.
+function scanStartTags(raw: string): XmlStartTag[] {
+  const tags: XmlStartTag[] = [];
+  let i = 0;
+  while (i < raw.length) {
+    const lt = raw.indexOf("<", i);
+    if (lt === -1) break;
+    const next = raw[lt + 1];
+    if (next === undefined) break;
+    if (next === "!") {
+      if (raw.startsWith("<!--", lt)) {
+        const close = raw.indexOf("-->", lt + 4);
+        i = close === -1 ? raw.length : close + 3;
+        continue;
+      }
+      if (raw.startsWith("<![CDATA[", lt)) {
+        const close = raw.indexOf("]]>", lt + 9);
+        i = close === -1 ? raw.length : close + 3;
+        continue;
+      }
+      const end = scanDeclarationEnd(raw, lt + 2);
+      i = end === -1 ? raw.length : end + 1;
+      continue;
+    }
+    if (next === "?") {
+      const close = raw.indexOf("?>", lt + 2);
+      i = close === -1 ? raw.length : close + 2;
+      continue;
+    }
+    if (next === "/") {
+      const end = scanTagEnd(raw, lt + 2);
+      i = end === -1 ? raw.length : end + 1;
+      continue;
+    }
+    if (!isNameStart(next)) {
+      i = lt + 1;
+      continue;
+    }
+    const end = scanTagEnd(raw, lt + 1);
+    if (end === -1) break;
+    let nameEnd = lt + 1;
+    while (nameEnd < end && isNameChar(raw[nameEnd] ?? "")) nameEnd += 1;
+    const name = raw.slice(lt + 1, nameEnd);
+    let k = end - 1;
+    while (k > lt && /\s/.test(raw[k] ?? "")) k -= 1;
+    const selfClosing = raw[k] === "/";
+    const insertPos = selfClosing ? k : end;
+    const attributes = parseAttributes(raw, nameEnd, insertPos);
+    tags.push({ name: name.toLowerCase(), insertPos, selfClosing, attributes });
+    i = end + 1;
+  }
+  return tags;
+}
+
+interface XmlRewriteResult {
+  raw: string;
+  changed: boolean;
+  langSet: boolean;
+  imagesFixed: { src: string }[];
+}
+
+// A minimal, well-formedness-preserving edit: it never round-trips the
+// document, so the XML declaration, namespaces and entities are untouched.
+// It only self-closes XML void elements and injects the requested attributes.
+function rewriteSpineDocument(
+  raw: string,
+  opts: { setLanguage?: string; addAlt: boolean; altPlaceholder: string },
+): XmlRewriteResult {
+  const tags = scanStartTags(raw);
+  const edits: { pos: number; text: string }[] = [];
+  const imagesFixed: { src: string }[] = [];
+  let sawHtml = false;
+  let langSet = false;
+
+  for (const tag of tags) {
+    const names = new Set(tag.attributes.map((attr) => attr.name.toLowerCase()));
+    let insertion = "";
+
+    if (opts.setLanguage !== undefined && !sawHtml && tag.name === "html") {
+      sawHtml = true;
+      if (!names.has("lang")) {
+        insertion += ` lang="${esc(opts.setLanguage)}"`;
+        langSet = true;
+      }
+      if (!names.has("xml:lang")) {
+        insertion += ` xml:lang="${esc(opts.setLanguage)}"`;
+        langSet = true;
+      }
+    }
+
+    if (tag.name === "img" && opts.addAlt && !names.has("alt")) {
+      const src = tag.attributes.find((attr) => attr.name.toLowerCase() === "src");
+      insertion += ` alt="${esc(opts.altPlaceholder)}"`;
+      if (!tag.selfClosing) insertion += "/";
+      imagesFixed.push({ src: src?.value ?? "(no src)" });
+    } else if (VOID_ELEMENTS.has(tag.name) && !tag.selfClosing) {
+      insertion += "/";
+    }
+
+    if (insertion.length > 0) edits.push({ pos: tag.insertPos, text: insertion });
+  }
+
+  if (edits.length === 0) {
+    return { raw, changed: false, langSet, imagesFixed };
+  }
+
+  edits.sort((a, b) => b.pos - a.pos);
+  let out = raw;
+  for (const edit of edits) {
+    out = out.slice(0, edit.pos) + edit.text + out.slice(edit.pos);
+  }
+  return { raw: out, changed: true, langSet, imagesFixed };
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -350,41 +587,23 @@ export function fixEpub(data: Uint8Array, options: FixOptions = {}): FixResult {
     const docPaths = spineDocPaths(opf);
 
     if (docPaths.length > 0 && (should("E008") || should("E009"))) {
+      const setLanguage = should("E009") ? language : undefined;
       let langCount = 0;
       for (const path of docPaths) {
         const bytes = files.get(path);
         if (!bytes) continue;
-        const doc = parseDoc(toStr(bytes));
-        if (!doc) continue;
-        let changed = false;
-        if (should("E009")) {
-          const root = doc.documentElement;
-          if (root) {
-            root.setAttribute("lang", language);
-            root.setAttribute("xml:lang", language);
-            changed = true;
-            langCount += 1;
-          }
+        const rewrite = rewriteSpineDocument(toStr(bytes), {
+          ...(setLanguage !== undefined ? { setLanguage } : {}),
+          addAlt: should("E008"),
+          altPlaceholder: ALT_PLACEHOLDER,
+        });
+        if (rewrite.langSet) langCount += 1;
+        for (const image of rewrite.imagesFixed) {
+          applied.push(
+            `E008: set alt="${ALT_PLACEHOLDER}" on ${path} (img src="${image.src}")`,
+          );
         }
-        if (should("E008")) {
-          let images: DomElement[] = [];
-          try {
-            images = Array.from(doc.querySelectorAll("img"));
-          } catch {
-            images = [];
-          }
-          for (const image of images) {
-            if (image.getAttribute("alt") === null) {
-              image.setAttribute("alt", ALT_PLACEHOLDER);
-              const src = image.getAttribute("src") ?? "(no src)";
-              applied.push(
-                `E008: set alt="${ALT_PLACEHOLDER}" on ${path} (img src="${src}")`,
-              );
-              changed = true;
-            }
-          }
-        }
-        if (changed) files.set(path, toBytes(doc.toString()));
+        if (rewrite.changed) files.set(path, toBytes(rewrite.raw));
       }
       if (langCount > 0) {
         applied.push(

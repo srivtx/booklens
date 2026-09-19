@@ -14,6 +14,10 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
+      - name: install.sh is valid POSIX shell
+        run: |
+          sh -n install.sh
+          sh install.sh --help
       - run: bunx tsc --noEmit
       - run: bun test
       - name: Fixtures

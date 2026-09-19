@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { main } from "../src/cli";
+import { buildEpub } from "../src/zip";
 import pkg from "../package.json" with { type: "json" };
 import { makeInaccessibleEpub } from "../scripts/make-fixtures";
 
@@ -12,6 +13,13 @@ const badPath = join(dir, "notepub.txt");
 writeFileSync(badPath, "definitely not an epub");
 const bookPath = join(dir, "book.epub");
 writeFileSync(bookPath, makeInaccessibleEpub());
+
+// A structurally valid ZIP that is not an EPUB (no container.xml / OPF).
+const notEpubZipPath = join(dir, "not-an-epub.zip");
+writeFileSync(
+  notEpubZipPath,
+  buildEpub([{ path: "README.txt", data: "just a zip" }]),
+);
 
 afterAll(() => {
   rmSync(dir, { recursive: true, force: true });
@@ -62,6 +70,30 @@ describe("cli exit codes", () => {
       const code = await main(["fix", badPath]);
       expect(code).toBe(2);
       expect(c.errs.join("\n")).toContain("Cannot parse");
+    } finally {
+      c.restore();
+    }
+  });
+
+  it("exits 2 when audit input is a valid ZIP that is not an EPUB", async () => {
+    const c = capture();
+    try {
+      const code = await main(["audit", notEpubZipPath]);
+      expect(code).toBe(2);
+      expect(c.errs.join("\n")).toContain("Cannot parse");
+      expect(c.errs.join("\n")).toContain("not a readable EPUB");
+    } finally {
+      c.restore();
+    }
+  });
+
+  it("exits 2 when fix input is a valid ZIP that is not an EPUB", async () => {
+    const c = capture();
+    try {
+      const code = await main(["fix", notEpubZipPath, "--dry-run"]);
+      expect(code).toBe(2);
+      expect(c.errs.join("\n")).toContain("Cannot parse");
+      expect(c.errs.join("\n")).toContain("not a readable EPUB");
     } finally {
       c.restore();
     }

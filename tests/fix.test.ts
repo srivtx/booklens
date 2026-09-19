@@ -10,6 +10,7 @@ import {
   makeInaccessibleEpub,
   makeNcxEpub,
   makeNoNavEpub,
+  makeXmlUnsafeNcxEpub,
 } from "../scripts/make-fixtures";
 
 const decoder = new TextDecoder("utf-8");
@@ -110,6 +111,31 @@ describe("fixEpub", () => {
           (entry) => entry.startsWith("W011:") && entry.includes("skipped"),
         ),
     ).toBe(true);
+  });
+
+  it("keeps a rewritten EPUB2/NCX spine document well-formed XML", () => {
+    const result = fixEpub(makeXmlUnsafeNcxEpub(), {
+      language: "en",
+      title: "Void Tag Book",
+    });
+
+    const store = readEpub(result.data);
+    const checked: string[] = [];
+    for (const path of store.list()) {
+      if (!/\.(xhtml|ncx|opf|xml)$/i.test(path)) continue;
+      const check = XMLValidator.validate(decoder.decode(store.get(path)), {
+        allowBooleanAttributes: true,
+      });
+      expect({ path, check }).toEqual({ path, check: true });
+      checked.push(path);
+    }
+    expect(checked).toContain("OEBPS/chapter1.xhtml");
+    expect(checked).toContain("OEBPS/toc.ncx");
+
+    const chapter = decoder.decode(store.get("OEBPS/chapter1.xhtml"));
+    expect(chapter).toContain("<br/>");
+    expect(chapter).toMatch(/<img\b[^>]*alt="TODO: describe image"[^>]*\/>/);
+    expect(chapter).toContain("&#160;");
   });
 
   it("writes an explicit alt placeholder and logs every changed image", () => {

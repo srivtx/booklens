@@ -4,6 +4,8 @@ import { fixEpub } from "./fix";
 import { writeSarif } from "./sarif";
 import { RULE_CODES } from "./rules";
 import { EpubReadError } from "./errors";
+import { readEpub } from "./zip";
+import { assertReadableEpub } from "./opf";
 import type { AuditResult, FixResult, Issue, Severity } from "./types";
 import pkg from "../package.json" with { type: "json" };
 
@@ -198,6 +200,22 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+// A readable ZIP may still not be an EPUB. Treat a missing/unreadable
+// container or package document as an I/O/parse failure (exit 2) rather than
+// as an accessibility finding (exit 1).
+function validateEpub(data: Uint8Array, file: string): number | undefined {
+  try {
+    assertReadableEpub(readEpub(data));
+    return undefined;
+  } catch (error) {
+    if (error instanceof EpubReadError) {
+      console.error(`Cannot parse ${file}: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  }
+}
+
 function wantsVersion(flags: Map<string, string | boolean>): boolean {
   return flags.get("version") === true || flags.get("v") === true;
 }
@@ -240,6 +258,9 @@ async function runAudit(args: string[]): Promise<number> {
     console.error(`Cannot read ${file}: ${errorMessage(error)}`);
     return 2;
   }
+
+  const invalidAudit = validateEpub(data, file);
+  if (invalidAudit !== undefined) return invalidAudit;
 
   let result: AuditResult;
   try {
@@ -310,6 +331,9 @@ async function runFix(args: string[]): Promise<number> {
     console.error(`Cannot read ${file}: ${errorMessage(error)}`);
     return 2;
   }
+
+  const invalidFix = validateEpub(data, file);
+  if (invalidFix !== undefined) return invalidFix;
 
   const language = flags.get("language");
   const title = flags.get("title");
