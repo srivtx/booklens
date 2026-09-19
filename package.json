@@ -36,7 +36,9 @@
     "test": "bun test",
     "make-fixtures": "bun run scripts/make-fixtures.ts",
     "audit": "bun run src/cli.ts audit",
-    "fix": "bun run src/cli.ts fix"
+    "fix": "bun run src/cli.ts fix",
+    "build:site": "node scripts/build-site.mjs",
+    "check:site": "node scripts/check-site.mjs"
   },
   "keywords": [
     "epub",
@@ -51,7 +53,8 @@
   ],
   "license": "MIT",
   "devDependencies": {
-    "@types/bun": "^1.4.2"
+    "@types/bun": "^1.4.2",
+    "esbuild": "^0.25.0"
   },
   "dependencies": {
     "fast-xml-parser": "^5.11.1",

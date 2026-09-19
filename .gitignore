@@ -2,3 +2,5 @@ node_modules/
 fixtures/
 *.log
 .DS_Store
+
+.vercel/

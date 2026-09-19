@@ -18,6 +18,22 @@
 
 **Live site:** [booklens](https://lens-site-srivtx.vercel.app/booklens.html)  ·  **Playground:** [https://lens-site-srivtx.vercel.app/playground](https://lens-site-srivtx.vercel.app/playground)  ·  **Source:** [github.com/srivtx/booklens](https://github.com/srivtx/booklens)
 
+## Website
+
+The standalone product site and in-browser playground live at
+[https://booklens-srivtx.vercel.app](https://booklens-srivtx.vercel.app).
+
+Preview it locally:
+
+```bash
+bun run build:site   # bundle src/index.ts into site/assets/demo.js
+bun run check:site   # verify links, classes, and page structure
+bunx serve site      # or: python3 -m http.server -d site 8080
+```
+
+The `#playground` section audits real EPUB bytes with the same rules as the
+CLI, entirely in the browser. Nothing is uploaded.
+
 ## The problem
 
 EPUB accessibility tooling splits into two halves that never meet.
