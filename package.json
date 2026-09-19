@@ -1,0 +1,28 @@
+{
+  "name": "epub-a11y",
+  "version": "0.1.0",
+  "description": "Offline EPUB accessibility auditor and auto-fixer — audit EPUB Accessibility 1.1 and write a corrected EPUB in one command.",
+  "type": "module",
+  "module": "src/index.ts",
+  "bin": {
+    "epub-a11y": "src/cli.ts"
+  },
+  "files": ["src", "README.md", "LICENSE", "CHANGELOG.md"],
+  "scripts": {
+    "typecheck": "bunx tsc --noEmit",
+    "test": "bun test",
+    "make-fixtures": "bun run scripts/make-fixtures.ts",
+    "audit": "bun run src/cli.ts audit",
+    "fix": "bun run src/cli.ts fix"
+  },
+  "keywords": ["epub", "accessibility", "a11y", "wcag", "epubcheck", "daisy", "ace"],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/bun": "^1.4.2"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.11.1",
+    "fflate": "0.8.2",
+    "linkedom": "^0.18.13"
+  }
+}

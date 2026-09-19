@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bunx tsc --noEmit
+      - run: bun test
+      - name: Fixtures
+        run: bun run make-fixtures
+      - name: Audit the intentionally broken fixture (must exit 1)
+        run: |
+          if bun run src/cli.ts audit fixtures/inaccessible.epub; then
+            echo "expected a non-zero exit"; exit 1
+          fi
+      - name: Fix then re-audit (must exit 0)
+        run: |
+          bun run src/cli.ts fix fixtures/inaccessible.epub -o /tmp/fixed.epub --language en --title Fixed
+          bun run src/cli.ts audit /tmp/fixed.epub
