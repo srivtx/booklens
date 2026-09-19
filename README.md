@@ -55,7 +55,7 @@ Or run it once without installing, install it globally, or add it to a project:
 
 ```bash
 # Run once, without installing
-bunx github:srivtx/booklens audit book.epub
+bunx github:srivtx/booklens#main audit book.epub
 
 # Install globally
 bun add -g github:srivtx/booklens
@@ -239,7 +239,7 @@ booklens audit book.epub --sarif booklens.sarif
 ```
 
 ```yaml
-- run: bunx github:srivtx/booklens audit public/book.epub --sarif booklens.sarif
+- run: bunx github:srivtx/booklens#main audit public/book.epub --sarif booklens.sarif
 - uses: github/codeql-action/upload-sarif@v3
   with:
     sarif_file: booklens.sarif
