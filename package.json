@@ -21,7 +21,7 @@
     "type": "git",
     "url": "https://github.com/srivtx/booklens.git"
   },
-  "homepage": "https://lens-site-srivtx.vercel.app/booklens.html",
+  "homepage": "https://booklens-srivtx.vercel.app",
   "bugs": {
     "url": "https://github.com/srivtx/booklens/issues"
   },

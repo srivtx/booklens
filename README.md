@@ -16,7 +16,7 @@
 
 ---
 
-**Live site:** [booklens](https://lens-site-srivtx.vercel.app/booklens.html)  ·  **Playground:** [https://lens-site-srivtx.vercel.app/playground](https://lens-site-srivtx.vercel.app/playground)  ·  **Source:** [github.com/srivtx/booklens](https://github.com/srivtx/booklens)
+**Live site:** [booklens](https://booklens-srivtx.vercel.app)  ·  **Playground:** [https://booklens-srivtx.vercel.app/#playground](https://booklens-srivtx.vercel.app/#playground)  ·  **Source:** [github.com/srivtx/booklens](https://github.com/srivtx/booklens)
 
 ## Website
 
