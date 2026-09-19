@@ -37,7 +37,7 @@
   "engines": {
     "bun": ">=1.1.0"
   },
-  "author": "srivtx",
+  "author": "svx",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "bun test",
