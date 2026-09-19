@@ -2,7 +2,9 @@
 
 # booklens
 
-**Audit EPUB accessibility and write a fixed EPUB — offline, in one command.**
+> Audit a book. Get a repaired one back.
+
+**Audit EPUB accessibility and write a fixed EPUB. It runs offline and can be scripted.**
 
 [![CI](https://github.com/srivtx/booklens/actions/workflows/ci.yml/badge.svg)](https://github.com/srivtx/booklens/actions/workflows/ci.yml)
 [![release](https://img.shields.io/github/v/release/srivtx/booklens?sort=semver&color=4f46e5)](https://github.com/srivtx/booklens/releases)
@@ -21,18 +23,9 @@
 ## Website
 
 The standalone product site and in-browser playground live at
-[https://booklens-srivtx.vercel.app](https://booklens-srivtx.vercel.app).
-
-Preview it locally:
-
-```bash
-bun run build:site   # bundle src/index.ts into site/assets/demo.js
-bun run check:site   # verify links, classes, and page structure
-bunx serve site      # or: python3 -m http.server -d site 8080
-```
-
-The `#playground` section audits real EPUB bytes with the same rules as the
-CLI, entirely in the browser. Nothing is uploaded.
+[https://booklens-srivtx.vercel.app](https://booklens-srivtx.vercel.app). The
+`#playground` section audits real EPUB bytes with the same rules as the CLI,
+entirely in the browser. Nothing is uploaded.
 
 ## The problem
 
@@ -40,35 +33,63 @@ EPUB accessibility tooling splits into two halves that never meet.
 
 **Auditing is solved.** [DAISY ACE](https://github.com/daisy/ace) reports on
 EPUB Accessibility 1.1 and WCAG 2.x, and [EPUBCheck](https://github.com/w3c/epubcheck)
-validates conformance. Both are excellent, maintained, offline tools.
+validates conformance. Both are maintained, offline tools.
 
-**Fixing is not.** Neither writes a corrected book. The only thing that repairs
+**Repair is not.** Neither writes a corrected book. The only tool that repairs
 content is [Access-Aide](https://github.com/kevinhendricks/Access-Aide), a Sigil
-*GUI plugin*: it is not scriptable, it cannot run in CI, and it pauses for manual
-alt-text entry. The one project advertising a one-command fixer has zero stars,
+*GUI plugin* that is not scriptable, cannot run in CI, and pauses for manual
+alt-text entry. The one project advertising a one-command fixer has no stars,
 no license file, and has never been published to npm.
 
-`booklens` closes that half. It audits a book and emits a repaired EPUB, so
-accessibility work runs in a pipeline instead of a desktop application.
+`booklens` does that repair step. It audits a book and emits a repaired EPUB, so
+accessibility work can run in a pipeline instead of a desktop application.
 
 ## Install
 
+``booklens` is not published to npm. Install it from GitHub with the one-line script (requires [Bun](https://bun.sh)):
+
+```bash
+# One-line install (installs the `booklens` binary)
+curl -fsSL https://raw.githubusercontent.com/srivtx/booklens/main/install.sh | sh
+
+# Or run once, without installing
+bunx github:srivtx/booklens audit book.epub
+
+# Install globally
+bun add -g github:srivtx/booklens
+booklens audit book.epub
+
+# Add to a project as a dev dependency
+bun add -d github:srivtx/booklens
+```
+
+## Development
+
+Clone the repository and install dependencies:
+
 ```bash
 bun install
-# run it straight from source
 bun run src/cli.ts audit book.epub
+```
+
+Build and check the product site:
+
+```bash
+bun run build:site   # bundle src/index.ts into site/assets/demo.js
+bun run check:site   # verify links, classes, and page structure
+bunx serve site      # or: python3 -m http.server -d site 8080
 ```
 
 ## Usage
 
 ```bash
-# Audit — human output, exit 1 if there are any errors
+# Audit: human output, exit 1 if there are any errors
 booklens audit book.epub
 
-# Audit — machine-readable for CI
+# Audit: machine-readable for CI
 booklens audit book.epub --json
 
-# Fix — write a corrected EPUB
+# Fix: write a corrected EPUB
 booklens fix book.epub -o book.fixed.epub --language en --title "My Book"
 
 # Preview the fixes without writing anything
@@ -161,7 +182,7 @@ booklens audit book.epub --sarif booklens.sarif
 ```
 
 ```yaml
-- run: bunx booklens audit public/book.epub --sarif booklens.sarif
+- run: bunx github:srivtx/booklens audit public/book.epub --sarif booklens.sarif
 - uses: github/codeql-action/upload-sarif@v3
   with:
     sarif_file: booklens.sarif
