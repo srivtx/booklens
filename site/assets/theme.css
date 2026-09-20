@@ -25,3 +25,16 @@
 /* The favicon (a lens glyph tinted with the accent) is declared in the
    document head as a data-URI <link rel="icon">, so there is no asset to
    fetch and the page keeps its no-network promise. */
+
+/* ── Brand mark ─────────────────────────────────────────────────────────── */
+.brand__mark {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+}
+
+.brand__mark .icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.4;
+}
