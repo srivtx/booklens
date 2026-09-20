@@ -7,11 +7,11 @@ booklens audits an EPUB against EPUB Accessibility 1.1 and WCAG 2.x and writes a
 It runs entirely offline, with no network calls and no telemetry. Output is human-readable text, stable JSON (one object for a single input, an array for many), SARIF 2.1.0 for code scanning, and a corrected EPUB. Exit codes are `0` (no findings at or above `--fail-on`), `1` (findings), `2` (invalid usage or a file that cannot be parsed as an EPUB), and `3` (I/O error).
 
 ## Docs
-- [Overview](https://booklens-srivtx.vercel.app/): Audit an EPUB and get a repaired book back, with an in-browser playground.
-- [Rules](https://booklens-srivtx.vercel.app/rules): The fifteen rules, how an EPUB is audited, and what `fix` changes.
-- [Usage](https://booklens-srivtx.vercel.app/usage): CLI flags, exit codes, JSON output, and the TypeScript library API.
-- [CI](https://booklens-srivtx.vercel.app/ci): SARIF 2.1.0 output for GitHub code scanning and an exit-code gate for pull requests.
-- [FAQ](https://booklens-srivtx.vercel.app/faq): Scope, limitations, and comparisons to DAISY ACE, EPUBCheck, and Access-Aide.
+- [Overview](https://srivtx.github.io/booklens/): Audit an EPUB and get a repaired book back, with an in-browser playground.
+- [Rules](https://srivtx.github.io/booklens/rules): The fifteen rules, how an EPUB is audited, and what `fix` changes.
+- [Usage](https://srivtx.github.io/booklens/usage): CLI flags, exit codes, JSON output, and the TypeScript library API.
+- [CI](https://srivtx.github.io/booklens/ci): SARIF 2.1.0 output for GitHub code scanning and an exit-code gate for pull requests.
+- [FAQ](https://srivtx.github.io/booklens/faq): Scope, limitations, and comparisons to DAISY ACE, EPUBCheck, and Access-Aide.
 
 ## Optional
 - [Source](https://github.com/srivtx/booklens): TypeScript implementation, tests, and issue tracker.

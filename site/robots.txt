@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://booklens-srivtx.vercel.app/sitemap.xml
+Sitemap: https://srivtx.github.io/booklens/sitemap.xml

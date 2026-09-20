@@ -16,14 +16,14 @@
 
 ---
 
-**Live site:** [booklens](https://booklens-srivtx.vercel.app)  ·  **Playground:** [https://booklens-srivtx.vercel.app/#playground](https://booklens-srivtx.vercel.app/#playground)  ·  **Source:** [github.com/srivtx/booklens](https://github.com/srivtx/booklens)
+**Live site:** [booklens](https://srivtx.github.io/booklens)  ·  **Playground:** [https://srivtx.github.io/booklens/#playground](https://srivtx.github.io/booklens/#playground)  ·  **Source:** [github.com/srivtx/booklens](https://github.com/srivtx/booklens)
 
-**Docs:** [Rules](https://booklens-srivtx.vercel.app/rules)  ·  [Usage](https://booklens-srivtx.vercel.app/usage)  ·  [CI](https://booklens-srivtx.vercel.app/ci)  ·  [FAQ](https://booklens-srivtx.vercel.app/faq)
+**Docs:** [Rules](https://srivtx.github.io/booklens/rules)  ·  [Usage](https://srivtx.github.io/booklens/usage)  ·  [CI](https://srivtx.github.io/booklens/ci)  ·  [FAQ](https://srivtx.github.io/booklens/faq)
 
 ## Website
 
 The standalone product site and in-browser playground live at
-[https://booklens-srivtx.vercel.app](https://booklens-srivtx.vercel.app). The
+[https://srivtx.github.io/booklens](https://srivtx.github.io/booklens). The
 `#playground` section audits real EPUB bytes with the same rules as the CLI,
 entirely in the browser. Nothing is uploaded.
 
@@ -296,7 +296,7 @@ Every tool emits stable JSON with `--json` and SARIF 2.1.0, with a documented
 exit-code scheme, so an agent can read findings without scraping a screen.
 
 - **Docs index:** the site serves a machine-readable index at
-  [booklens-srivtx.vercel.app/llms.txt](https://booklens-srivtx.vercel.app/llms.txt).
+  [srivtx.github.io/booklens/llms.txt](https://srivtx.github.io/booklens/llms.txt).
 - **MCP server:** [lenses-mcp](https://github.com/srivtx/lenses-mcp) exposes all
   five tools over stdio (audit for each format, plus `booklens_fix`,
   `waxseal_seal`, `waxseal_verify`, `waxseal_inspect`).
